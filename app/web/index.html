@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lifecycle Campaign Studio</title>
+  <style>
+    :root {
+      --bg:#f6f7fb; --panel:#ffffff; --ink:#1a1d29; --muted:#6b7280; --line:#e6e8f0;
+      --accent:#6d5ef6; --accent2:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+      --sans:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5}
+    header{background:linear-gradient(90deg,#6d5ef6,#8b5cf6);color:#fff;padding:18px 24px}
+    header h1{margin:0;font-size:18px;font-weight:700}
+    header p{margin:2px 0 0;opacity:.9;font-size:13px}
+    main{max-width:1080px;margin:0 auto;padding:22px;display:grid;grid-template-columns:380px 1fr;gap:20px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+    .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 12px}
+    label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+    input,select,textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:14px;font-family:var(--sans);background:#fff;color:var(--ink)}
+    textarea{min-height:56px;resize:vertical}
+    .row{display:flex;gap:10px}.row>*{flex:1}
+    button{margin-top:14px;width:100%;background:var(--accent);color:#fff;border:0;border-radius:9px;padding:11px;font-weight:650;font-size:14px;cursor:pointer}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .seg{border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-top:8px;display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+    .seg input{width:auto}
+    .seg small{color:var(--muted)}
+    .empty{color:var(--muted);font-size:14px;text-align:center;padding:40px 0}
+    .segplan{border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+    .segplan h3{margin:0 0 2px;font-size:15px}
+    .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:650;background:#eef;color:#4338ca}
+    .badge.sms{background:#ecfdf5;color:#047857}
+    .winner{background:#faf9ff;border:1px solid #e9e6ff;border-radius:10px;padding:12px;margin-top:10px}
+    .subject{font-weight:650;margin-bottom:6px}
+    pre{background:#0f1320;color:#e6e9ef;border-radius:8px;padding:12px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;margin:8px 0 0}
+    .score{display:flex;align-items:center;gap:10px;margin:10px 0 2px}
+    .composite{font-size:26px;font-weight:800}
+    .dims{margin-top:8px;display:grid;gap:6px}
+    .dim{display:grid;grid-template-columns:120px 1fr 42px;align-items:center;gap:8px;font-size:12px}
+    .bar{height:7px;background:#eef0f6;border-radius:999px;overflow:hidden}
+    .bar>span{display:block;height:100%;background:var(--accent)}
+    .notes{margin-top:8px;font-size:12px;color:var(--warn)}
+    .others{margin-top:10px;font-size:13px}
+    .others summary{cursor:pointer;color:var(--muted)}
+    .others .v{border-top:1px dashed var(--line);padding:8px 0;font-size:13px}
+    .err{color:var(--bad);font-size:13px;margin-top:8px}
+    .ok{color:var(--muted);font-size:12px;margin-top:8px}
+    @media(max-width:900px){main{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Lifecycle Campaign Studio</h1>
+    <p>Generate personalized email/SMS variants per segment — then score them on brand voice, CTA, personalization &amp; deliverability.</p>
+  </header>
+
+  <main>
+    <section class="card" id="controls">
+      <h2>Brief</h2>
+      <label>Product</label>
+      <input id="product" value="Aurora — sleep &amp; focus supplements" />
+      <label>Description</label>
+      <textarea id="desc">Plant-based supplements that help you fall asleep faster and focus better, backed by clinical research.</textarea>
+      <label>Value props (comma-separated)</label>
+      <input id="props" value="fall asleep 2x faster, no grogginess, clinically studied" />
+      <div class="row">
+        <div><label>Tone</label>
+          <select id="tone"><option>friendly</option><option>professional</option><option>playful</option><option>urgent</option><option>luxury</option></select>
+        </div>
+        <div><label>Goal</label>
+          <select id="goal">
+            <option value="re_engagement">re-engagement</option>
+            <option value="abandoned_cart" selected>abandoned cart</option>
+            <option value="welcome">welcome</option><option value="upsell">upsell</option>
+            <option value="winback">winback</option><option value="promotion">promotion</option>
+          </select>
+        </div>
+      </div>
+      <label>Banned phrases (comma-separated)</label>
+      <input id="banned" value="miracle cure, guaranteed" />
+      <div class="row">
+        <div><label>Channels</label>
+          <div style="display:flex;gap:12px;font-size:13px;margin-top:6px">
+            <label style="margin:0"><input type="checkbox" id="ch-email" checked style="width:auto"> email</label>
+            <label style="margin:0"><input type="checkbox" id="ch-sms" style="width:auto"> sms</label>
+          </div>
+        </div>
+        <div><label>Variants / segment</label>
+          <input id="count" type="number" min="1" max="5" value="3" />
+        </div>
+      </div>
+      <label>Segments</label>
+      <div id="segments"></div>
+
+      <button id="run" disabled>Generate &amp; score campaign</button>
+      <div class="err" id="err"></div>
+      <details style="margin-top:12px"><summary style="font-size:12px;color:var(--muted);cursor:pointer">Sign in</summary>
+        <div class="row"><div><label>Account</label><input id="account" value="marketer"></div>
+        <div><label>Password</label><input id="password" type="password" value="local-dev-password"></div></div>
+        <button id="login" style="margin-top:8px">Get token</button>
+        <div class="ok" id="authok"></div>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>Campaign plan</h2>
+      <div id="out"><div class="empty">Sign in and generate a campaign to see per-segment winners and score breakdowns.</div></div>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let token = null;
+
+    const SEGMENTS = [
+      {id:"cart_abandoners", name:"Cart abandoners", traits:["added to cart","did not check out"], incentive:"10% off", on:true},
+      {id:"churned", name:"Churned (60+ days)", traits:["inactive 60 days","former subscriber"], incentive:"20% off to return", on:true},
+      {id:"new_signups", name:"New signups", traits:["just joined","still exploring"], incentive:"free starter guide", on:false},
+      {id:"vips", name:"VIPs", traits:["frequent buyer","high lifetime value"], incentive:"early access", on:false},
+    ];
+    const DIMS = ["brand_voice","clarity","cta_strength","personalization","deliverability"];
+
+    function renderSegments(){
+      $("segments").innerHTML = "";
+      SEGMENTS.forEach((s,i)=>{
+        const el=document.createElement("label");
+        el.className="seg";
+        el.innerHTML=`<input type="checkbox" ${s.on?"checked":""} data-i="${i}"> <span><b>${s.name}</b><br><small>${s.traits.join(" · ")} — ${s.incentive}</small></span>`;
+        el.querySelector("input").onchange=(e)=>{SEGMENTS[i].on=e.target.checked};
+        $("segments").appendChild(el);
+      });
+    }
+
+    async function login(){
+      $("authok").textContent=""; $("err").textContent="";
+      try{
+        const r=await fetch("/v1/auth/token",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({account_id:$("account").value,password:$("password").value})});
+        if(!r.ok) throw new Error("Invalid credentials ("+r.status+")");
+        token=(await r.json()).access_token;
+        $("authok").textContent="Authenticated.";
+        $("run").disabled=false;
+      }catch(e){ $("err").textContent=e.message; }
+    }
+
+    function buildBrief(){
+      const channels=[]; if($("ch-email").checked)channels.push("email"); if($("ch-sms").checked)channels.push("sms");
+      return { brief:{
+        product_name:$("product").value,
+        product_description:$("desc").value,
+        value_props:$("props").value.split(",").map(s=>s.trim()).filter(Boolean),
+        brand_voice:{tone:$("tone").value, guidelines:"", banned_phrases:$("banned").value.split(",").map(s=>s.trim()).filter(Boolean)},
+        goal:$("goal").value,
+        channels: channels.length?channels:["email"],
+        segments: SEGMENTS.filter(s=>s.on).map(s=>({id:s.id,name:s.name,description:"",traits:s.traits,incentive:s.incentive})),
+        variants_per_segment: parseInt($("count").value)||3
+      }};
+    }
+
+    async function run(){
+      $("err").textContent=""; $("run").disabled=true; $("run").textContent="Generating…";
+      try{
+        const r=await fetch("/v1/campaigns",{method:"POST",
+          headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+          body:JSON.stringify(buildBrief())});
+        if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error((e.error&&e.error.message)||("Failed: "+r.status));}
+        render((await r.json()).plan);
+      }catch(e){ $("err").textContent=e.message; }
+      finally{ $("run").disabled=false; $("run").textContent="Generate & score campaign"; }
+    }
+
+    function pct(x){return Math.round(x*100)}
+    function color(x){return x>=0.75?"var(--accent2)":x>=0.5?"var(--warn)":"var(--bad)"}
+
+    function scoreBlock(sc){
+      const dims = DIMS.map(d=>`<div class="dim"><span>${d.replace("_"," ")}</span>
+        <div class="bar"><span style="width:${pct(sc[d])}%;background:${color(sc[d])}"></span></div>
+        <span>${pct(sc[d])}%</span></div>`).join("");
+      const notes = (sc.notes||[]).length?`<div class="notes">⚠ ${sc.notes.join(" · ")}</div>`:"";
+      return `<div class="score"><span class="composite" style="color:${color(sc.composite)}">${pct(sc.composite)}</span>
+        <span style="color:var(--muted);font-size:12px">composite score</span></div>
+        <div class="dims">${dims}</div>${notes}`;
+    }
+
+    function variantBlock(v){
+      const chan = v.variant.channel;
+      const subj = chan==="email" ? `<div class="subject">✉ ${escape(v.variant.subject)}</div>` : "";
+      return `<span class="badge ${chan}">${chan}</span>
+        ${subj}<pre>${escape(v.variant.body)}</pre>${scoreBlock(v.score)}`;
+    }
+
+    function render(plan){
+      const out=$("out"); out.innerHTML="";
+      out.insertAdjacentHTML("beforeend",
+        `<div class="ok">Goal: <b>${plan.goal.replace("_"," ")}</b> · model: <b>${plan.model}</b> · ${plan.segment_plans.length} segment(s)</div>`);
+      plan.segment_plans.forEach(sp=>{
+        const others = sp.scored_variants.slice(1).map(v=>
+          `<div class="v"><span class="badge ${v.variant.channel}">${v.variant.channel}</span>
+             ${v.variant.subject?" "+escape(v.variant.subject):""} — <b>${pct(v.score.composite)}</b></div>`).join("");
+        const el=document.createElement("div"); el.className="segplan";
+        el.innerHTML=`<h3>${escape(sp.segment_name)}</h3>
+          <div style="font-size:12px;color:var(--muted)">winner of ${sp.scored_variants.length} variant(s)</div>
+          <div class="winner">${variantBlock(sp.winner)}</div>
+          ${others?`<details class="others"><summary>Other variants</summary>${others}</details>`:""}`;
+        out.appendChild(el);
+      });
+    }
+
+    function escape(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
+
+    $("login").onclick=login; $("run").onclick=run;
+    renderSegments();
+  </script>
+</body>
+</html>
