@@ -1,0 +1,27 @@
+# Local stack. `docker compose up --build` starts the studio in sandbox mode
+# (deterministic copy generator + judge) — no secrets, no model download.
+#
+# For real generation, start Ollama and flip the mode:
+#   docker compose --profile llm up
+#   docker compose exec ollama ollama pull llama3.1
+#   LLM_MODE=real docker compose up
+services:
+  api:
+    build: .
+    env_file: .env
+    environment:
+      LLM_MODE: ${LLM_MODE:-sandbox}
+      LLM_BASE_URL: http://ollama:11434/v1
+    ports:
+      - "8000:8000"
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["llm"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollamadata:/root/.ollama
+
+volumes:
+  ollamadata:
