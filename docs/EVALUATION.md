@@ -95,6 +95,44 @@ which is the sort of thing that matters if this ever touched regulated copy.
   *rubric*, not a real model's brand-voice judgment. Re-running with `LLM_MODE=real`
   would move `brand_voice` and is the obvious next measurement.
 
+## Real-model validation (attempted, hardware-blocked)
+
+The numbers above use the deterministic sandbox judge, so they describe the
+scorer's *rubric*, not a real model's brand-voice judgment. I tried to close that
+gap by running the same eval with `LLM_MODE=real` against local Ollama.
+
+It didn't run on my hardware. The dev machine has 6 GB of RAM; `llama3.2:3b` needs
+~2.9 GB and `llama3.2:1b` ~1.4 GB, and with a browser open there was under 1 GB
+free. Both models loaded but then swapped to disk on every token — a single "say
+OK" call took over four minutes and usually timed out. My own retry logic caught
+it correctly (three transient retries, then a clean `TransientLlmError`), which at
+least confirms that path works, but there were no useful judgments to score.
+
+Two honest takeaways rather than one:
+
+1. The adapter is validated against a mocked OpenAI server (`tests/unit/`), so the
+   request/response and retry behavior are covered. What's *not* covered is a real
+   model's judgment quality on this task.
+2. A ~1B judge would very likely be noisier than the deterministic heuristics
+   anyway, so "real" here doesn't automatically mean "better." The right comparison
+   is an 8B-class model.
+
+To reproduce on adequate hardware (or a hosted OpenAI-compatible endpoint):
+
+```bash
+# local, needs ~8 GB free
+ollama pull llama3.1
+LLM_MODE=real LLM_MODEL=llama3.1 LLM_BASE_URL=http://localhost:11434/v1 \
+  python -m evals --json real.json
+
+# or any hosted endpoint (Groq, OpenAI, vLLM, ...)
+LLM_MODE=real LLM_BASE_URL=... LLM_API_KEY=... LLM_MODEL=... python -m evals
+```
+
+The five heuristic dimensions should be **identical** to the sandbox run — they
+never call a model — so any movement in the table isolates exactly what the LLM
+judge contributes to `brand_voice`. That diff is the experiment worth running.
+
 ## What I'd measure next
 
 1. Re-run the whole set against a real model and diff the per-lever table — the
