@@ -3,16 +3,28 @@
 Defaults target a local Ollama server so the studio runs with no paid account.
 Owns one pooled ``httpx.AsyncClient`` and maps transport/HTTP failures onto the
 port's exception contract.
+
+Transient failures (timeouts, 5xx, 429) are retried with exponential backoff;
+permanent failures (4xx, malformed response) fail fast — retrying them only burns
+latency and quota.
 """
 
 from __future__ import annotations
+
+import asyncio
+import time
 
 import httpx
 
 from app.llm.base import LlmPort, PermanentLlmError, TransientLlmError
 from app.logging import get_logger
+from app.metrics import LLM_CALLS, LLM_LATENCY, task_label
 
 logger = get_logger(__name__)
+
+MAX_ATTEMPTS = 3
+# Delay after attempt 1 and attempt 2 respectively.
+BACKOFF_SECONDS = (1.0, 2.0)
 
 
 class OpenAICompatibleLlm(LlmPort):
@@ -46,6 +58,36 @@ class OpenAICompatibleLlm(LlmPort):
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
 
+        task = task_label(system)
+        started = time.perf_counter()
+        status = "error"
+        try:
+            result = await self._complete_with_retry(payload)
+            status = "ok"
+            return result
+        finally:
+            LLM_CALLS.labels(task=task, status=status).inc()
+            LLM_LATENCY.labels(task=task).observe(time.perf_counter() - started)
+
+    async def _complete_with_retry(self, payload: dict[str, object]) -> str:
+        last_error: TransientLlmError | None = None
+        for attempt in range(MAX_ATTEMPTS):
+            try:
+                return await self._call(payload)
+            except TransientLlmError as exc:
+                last_error = exc
+                if attempt == MAX_ATTEMPTS - 1:
+                    break
+                delay = BACKOFF_SECONDS[attempt]
+                logger.warning(
+                    "llm_retry", extra={"attempt": attempt + 1, "delay": delay, "code": exc.code}
+                )
+                await asyncio.sleep(delay)
+
+        assert last_error is not None  # loop only breaks after catching an error
+        raise last_error
+
+    async def _call(self, payload: dict[str, object]) -> str:
         try:
             response = await self._client.post("/chat/completions", json=payload)
         except httpx.TimeoutException as exc:
