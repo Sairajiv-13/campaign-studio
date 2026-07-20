@@ -16,3 +16,5 @@ htmlcov
 tests
 evals
 *.md
+PROJECT_BUNDLE.pdf
+PROJECT_BUNDLE.md

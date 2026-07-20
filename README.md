@@ -1,15 +1,28 @@
+<!-- GitHub topics: fastapi, langgraph, marketing-automation, llm, campaign-generation, python, prometheus, jwt, evaluation -->
+
 # Lifecycle Campaign Studio
 
-> Generate, score, and rank personalized marketing campaigns per audience segment —
-> with zero API keys, zero setup, and 100% eval-validated scoring accuracy.
+[![CI](https://github.com/sairajeev-collab/campaign-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/sairajeev-collab/campaign-studio/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**What it does:** Takes a product brief and audience segments, generates email/SMS
-variants, scores each on brand voice / clarity / CTA / personalization /
-deliverability, and returns the winner per segment with full score breakdowns.
+> Generates email/SMS campaign variants per audience segment, scores each one, and
+> tells you which to send.
 
-**Why it's interesting:** The scorer blends deterministic marketing heuristics
-(Flesch readability, spam detection, CTA strength) with an LLM brand-voice judge,
-validated against human A/B preference on 12 labeled pairs.
+I wanted to see how far you can get grading marketing copy automatically. Writing
+the copy is the easy half — any model will hand you five subject lines. Picking
+which one actually goes out is the part most "AI marketing" demos skip, usually by
+asking the model to grade its own homework.
+
+So the generation here is deliberately unremarkable. The scoring is the point.
+
+Give it a product brief and some segments, and it writes variants for each segment,
+scores every one on brand voice, clarity, CTA strength, personalization, and
+deliverability, then ranks them and hands back a winner plus a runner-up for A/B.
+
+It runs with no API key and no model download — the generator and the brand-voice
+judge both have deterministic sandbox implementations, so CI is hermetic and the
+demo works offline. Point it at a real model with one env var when you want to.
 
 **Run it:** `docker compose up --build` → http://localhost:8000 → sign in with
 `marketer` / `local-dev-password`
@@ -18,21 +31,36 @@ validated against human A/B preference on 12 labeled pairs.
 
 ## What makes it more than "call an LLM"
 
-The interesting part is the **scorer**, not the generation. Each variant is graded
-on a rubric that blends deterministic marketing heuristics with an LLM judge:
+Generation is the boring half. The real question is which variant ships, and
+"ask the model which one it likes" is circular — same student grading the exam.
+
+So most of the scorer is plain Python:
 
 | Dimension | How it's measured |
 |-----------|-------------------|
-| **brand_voice** | LLM-as-judge against the brand tone + a hard banned-phrase check |
-| **clarity** | Flesch reading ease (+ subject-line quality for email) |
+| **brand_voice** | LLM-as-judge against the brand tone, plus a hard banned-phrase check in code |
+| **clarity** | Flesch reading ease, plus subject-line length rules for email |
 | **cta_strength** | strong vs weak call-to-action detection |
-| **personalization** | merge tags + segment-trait references + second person |
-| **deliverability** | spam-trigger / shouting-caps / punctuation risk → inbox placement |
+| **personalization** | merge tags, segment-trait references, second person |
+| **deliverability** | spam triggers, shouting caps, exclamation abuse |
 
-The dimensions roll up into a weighted `composite` (brand voice and CTA weighted
-highest; deliverability is a floor). This is real marketing logic you can defend in
-an interview — and it's **validated**: an evaluation harness checks that the
-scorer's ranking agrees with human A/B preference on a labeled dataset.
+Those roll into a weighted composite. Brand voice and CTA carry the most weight;
+deliverability is a floor you shouldn't sink through — great copy in the spam
+folder is worth nothing.
+
+I do use an LLM as the judge for brand voice, because tone is genuinely hard to
+pin down with rules. But I don't trust it on its own. Banned phrases are checked
+in code, not by the model, and if the judge is unreachable the score falls back to
+that check instead of failing the request.
+
+The obvious follow-up is "how do you know the scorer is any good?" So there's an
+eval: 12 hand-labeled A/B pairs, each isolating one lever, with the winning side
+alternating so a position-biased scorer would only hit ~50%. `make eval` reports
+pairwise ranking accuracy and CI fails below the threshold.
+
+It currently scores 100% on those 12 pairs. Worth being clear about what that
+does and doesn't mean: 12 pairs is enough to catch a regression, not enough to
+claim the scorer is objectively correct. It's a smoke test with teeth, not proof.
 
 ## Architecture
 
@@ -61,17 +89,17 @@ stateDiagram-v2
     assemble --> [*]
 ```
 
-- **generate** — for each segment × channel, prompt the model for N on-brand,
-  personalized variants (JSON). Falls back to a templated variant if a completion
-  is malformed, so one bad response never sinks the campaign.
-- **score** — grade every variant with the heuristics + brand-voice judge into a
-  `ScoreBreakdown`. The judge degrades gracefully to a deterministic banned-phrase
-  check if the model is unavailable.
-- **assemble** — rank variants per segment, pick the winner + runner-up, and roll
-  up into a `CampaignPlan`.
+- **generate** — for each segment × channel, ask the model for N on-brand variants
+  as JSON. A malformed completion falls back to a templated variant, so one bad
+  response doesn't sink the whole campaign.
+- **score** — grade every variant with the heuristics plus the brand-voice judge
+  into a `ScoreBreakdown`.
+- **assemble** — rank per segment, pick the winner and runner-up, roll up into a
+  `CampaignPlan`.
 
-Each node is a pure `async (state, ctx) -> dict` function, unit-tested in
-isolation with the sandbox model.
+Each node is a pure `async (state, ctx) -> dict` that returns only what it changed,
+so they're unit-tested in isolation against the sandbox model. Design notes are in
+[docs/adr/](docs/adr/).
 
 ## Quickstart
 
@@ -80,8 +108,8 @@ cp .env.example .env                 # defaults are sandbox-safe, no secrets
 docker compose up --build            # studio on http://localhost:8000
 ```
 
-Open `http://localhost:8000/`, sign in with the dev account (`marketer` /
-`local-dev-password`), pick segments, and generate. Or without Docker:
+Open `http://localhost:8000/`, sign in with `marketer` / `local-dev-password`,
+pick segments, generate. Without Docker:
 
 ```bash
 uv venv --python 3.12 && uv pip install -e ".[dev]"   # or plain pip
@@ -115,6 +143,7 @@ curl -s -X POST localhost:8000/v1/campaigns -H "Authorization: Bearer $TOKEN" \
 |---------------|------|---------|
 | `GET /` | public | Demo UI |
 | `GET /health` | public | Liveness + model + campaign count |
+| `GET /metrics` | public | Prometheus metrics (LLM calls, latency, generations) |
 | `POST /v1/auth/token` | service creds | Exchange credentials for a JWT |
 | `POST /v1/campaigns` | `campaigns:write` | Generate + score a campaign |
 | `GET /v1/campaigns/{id}` | `campaigns:read` | Fetch a stored plan |
@@ -122,31 +151,30 @@ curl -s -X POST localhost:8000/v1/campaigns -H "Authorization: Bearer $TOKEN" \
 ## Using a real model
 
 Set `LLM_MODE=real` and point `LLM_BASE_URL` at any OpenAI-compatible endpoint
-(local Ollama by default): `ollama pull llama3.1`. The generator and judge prompts
-already request JSON (`response_format`), so the same code path works against a
-real model — the sandbox just makes it runnable offline and in CI.
+(local Ollama by default — `ollama pull llama3.1`). Same code path: the prompts
+already ask for JSON via `response_format`. Transient failures (timeouts, 5xx,
+429) retry three times with 1s/2s backoff; 4xx and malformed responses fail fast,
+since retrying those just burns quota.
+
+The sandbox exists so the repo runs with nothing installed, not because the real
+path is an afterthought.
 
 ## Evaluation
-
-The scorer is only useful if it agrees with a human marketer. `make eval` runs a
-labeled set of A/B copy pairs (each isolating one lever, winner alternating sides)
-and reports **pairwise ranking accuracy** — does the scorer give the human-preferred
-variant the higher composite?
 
 ```bash
 make eval        # python -m evals --min-accuracy 0.8
 ```
 
-CI fails if accuracy drops below the threshold, so a change that degrades scoring
-quality is caught automatically.
+Reports pairwise ranking accuracy against the labeled pairs, broken down by lever,
+and exits non-zero below the threshold so CI catches a scoring regression.
 
 ## Testing
 
-Fully hermetic — sandbox model, in-memory store, no services or secrets.
+Hermetic — sandbox model, in-memory store, no services, no secrets.
 
 ```bash
 make test        # or: make cov  (>80% gate)
-make lint type   # ruff + mypy (strict)
+make lint type   # ruff + mypy strict
 ```
 
 ## Project layout
@@ -161,16 +189,31 @@ app/
   api/        FastAPI routes + schemas
   web/        self-contained demo UI
 evals/        labeled A/B dataset + ranking-accuracy harness (CI gate)
+docs/         ADRs, deployment guide, screenshots
 tests/        unit + integration (hermetic)
 ```
 
+Deployment notes and the full env var table are in
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
 ## What I'd do next
 
-- **Predicted engagement model** — replace the heuristic proxy with a small model
-  trained on historical open/click data per segment.
-- **Send-time optimization** and channel selection per segment.
-- **Multivariate testing** with real experiment tracking and lift measurement.
-- **Persistence + history** (swap the in-memory store for Postgres) and per-brand
-  voice profiles.
-- **Guardrails**: claims/compliance checks (health, finance) beyond banned phrases.
-- **Streaming generation** for lower perceived latency in the UI.
+Roughly in the order I'd actually pick them up:
+
+1. **Predicted engagement model** — the biggest gap. Right now engagement is a
+   heuristic proxy; a small model trained on historical open/click data per segment
+   would replace guesswork with evidence.
+2. **Send-time optimization** — picking when to send, and which channel, per
+   segment. Cheap to add, measurable lift.
+3. **Multivariate testing** — real experiment tracking so the A/B winner is
+   validated against actual results instead of just the scorer's opinion.
+4. **Persistence and history** — swap the in-memory store for Postgres behind the
+   existing interface, plus per-brand voice profiles.
+5. **Guardrails** — claims and compliance checks for regulated copy (health,
+   finance), beyond the banned-phrase list.
+6. **Streaming generation** — mostly a UX win; the wait is noticeable with a real
+   model.
+
+---
+
+Built by [Sairajeev](https://github.com/sairajeev-collab). MIT licensed.
