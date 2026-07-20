@@ -1,11 +1,19 @@
 """Labeled A/B copy pairs with a human-preferred winner.
 
-Each pair holds two variants for the same context and the variant a marketer
-prefers, with the reason. A good scorer should rank the preferred variant higher.
-The pairs isolate one lever at a time (CTA, personalization, deliverability, brand
-voice, subject, clarity): the preferred variant is genuinely stronger on that lever
-and the other is weaker on exactly it. The winning side alternates between A and B
-so a position-biased baseline scores only ~50%.
+Each pair holds two variants for the same context and the variant a marketer would
+actually send, with the reason. A good scorer ranks the preferred variant higher.
+The winning side alternates between A and B so a position-biased baseline scores
+only ~50%.
+
+The set has two halves that measure different things:
+
+* ``PAIRS`` (p01-p12) isolate one lever each — CTA, personalization,
+  deliverability, brand voice, subject, clarity. The preferred variant is stronger
+  on that lever and the other is weaker on exactly it. A working scorer sweeps
+  these, which makes them a **regression test**.
+* ``ADVERSARIAL_PAIRS`` (a01-a06) are cases where the preferred copy *loses* on a
+  measured dimension. These are the actual benchmark; two of them currently fail,
+  by design. See docs/EVALUATION.md for the failure analysis.
 """
 
 from __future__ import annotations
@@ -209,3 +217,104 @@ PAIRS: list[EvalPair] = [
         "Explicit tie to a past purchase raises relevance and CTA quality.",
     ),
 ]
+
+# --------------------------------------------------------------------------- #
+# Adversarial pairs
+# --------------------------------------------------------------------------- #
+# The pairs above each isolate one lever the scorer explicitly measures, so a
+# working scorer should sweep them — which makes them a regression test, not a
+# hard benchmark. These are the opposite: cases where the copy a marketer would
+# actually pick *loses* on at least one measured dimension. They are expected to
+# expose real failure modes, and they do (see docs/EVALUATION.md). Keeping known
+# failures in the set is deliberate: an eval you always pass tells you nothing.
+ADVERSARIAL_PAIRS: list[EvalPair] = [
+    EvalPair(
+        "a01",
+        "over_personalization",
+        "email",
+        "friendly",
+        ["browsed running shoes"],
+        "{first_name}, still thinking about those running shoes?",
+        "Hi {first_name},\n\nWe saw you looking at running shoes at 11pm last night, and "
+        "again this morning from your phone. Still deciding? Shop now →",
+        "New arrivals in running",
+        "Hi,\n\nOur new running range just landed. Take a look whenever you're ready.\n\nShop now →",
+        "b",
+        "A cites specific browsing times — maximally 'personalized' and maximally creepy. "
+        "Relevance is not the same as surveillance, and the scorer has no notion of that.",
+    ),
+    EvalPair(
+        "a02",
+        "substance",
+        "email",
+        "friendly",
+        ["cart abandoner"],
+        "Your cart",
+        "Buy now →",
+        "Your cart is still here",
+        "Hi {first_name},\n\nYour cart's saved for 48 hours. Free returns if it's not right.\n\nShop now →",
+        "b",
+        "A is maximally readable and has a strong CTA but says nothing. Short and punchy "
+        "is not the same as persuasive; the readability score can't tell them apart.",
+    ),
+    EvalPair(
+        "a03",
+        "clickbait",
+        "email",
+        "playful",
+        ["re-engagement"],
+        "You won't believe what happened",
+        "Hi {first_name},\n\nWe've been busy. Come see what changed.\n\nTake a look →",
+        "Your account has 3 new features",
+        "Hi {first_name},\n\nThree things launched since you were last here.\n\nTake a look →",
+        "b",
+        "A is clean, well-formed, spam-word-free — and pure clickbait. Specificity beats "
+        "curiosity for lifecycle mail, but nothing in the rubric penalizes a vague hook.",
+    ),
+    EvalPair(
+        "a04",
+        "near_miss_banned",
+        "email",
+        "friendly",
+        ["supplement buyer"],
+        "The miracle formula everyone's talking about",
+        "Hi {first_name},\n\nOur miracle formula is back in stock. Claim yours →",
+        "Back in stock: your daily blend",
+        "Hi {first_name},\n\nYour daily blend is back in stock. Claim yours →",
+        "b",
+        "Banned list says 'miracle cure'; A says 'miracle formula'. Substring matching "
+        "misses the paraphrase, which is exactly how compliance problems get shipped.",
+        ["miracle cure"],
+    ),
+    EvalPair(
+        "a05",
+        "emphasis_caps",
+        "sms",
+        "urgent",
+        ["flash sale"],
+        "",
+        "{first_name}, FREE shipping ends tonight. Claim it: ex.co/go",
+        "",
+        "{first_name}, free shipping ends tonight. Claim it: ex.co/go",
+        "a",
+        "One capitalized word for emphasis is normal marketing copy, but the caps-ratio "
+        "check treats short SMS as shouting. Small corpus, blunt heuristic.",
+    ),
+    EvalPair(
+        "a06",
+        "tone_subtlety",
+        "email",
+        "luxury",
+        ["high lifetime value"],
+        "An exclusive, curated selection, reserved for you",
+        "{first_name}, we've crafted an exclusive, curated, elevated selection reserved "
+        "exclusively for our most exclusive members. Explore now →",
+        "Reserved for you",
+        "{first_name}, a small selection we thought you'd appreciate. Explore now →",
+        "b",
+        "A stuffs every luxury lexicon word in and reads like a parody. The tone check "
+        "rewards keyword presence, not restraint.",
+    ),
+]
+
+PAIRS.extend(ADVERSARIAL_PAIRS)

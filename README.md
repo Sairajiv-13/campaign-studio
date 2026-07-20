@@ -7,7 +7,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > Generates email/SMS campaign variants per audience segment, scores each one, and
-> tells you which to send.
+> tells you which to send — with the scoring measured against human judgment, not
+> assumed.
 
 I wanted to see how far you can get grading marketing copy automatically. Writing
 the copy is the easy half — any model will hand you five subject lines. Picking
@@ -54,13 +55,30 @@ in code, not by the model, and if the judge is unreachable the score falls back 
 that check instead of failing the request.
 
 The obvious follow-up is "how do you know the scorer is any good?" So there's an
-eval: 12 hand-labeled A/B pairs, each isolating one lever, with the winning side
-alternating so a position-biased scorer would only hit ~50%. `make eval` reports
-pairwise ranking accuracy and CI fails below the threshold.
+eval: 18 hand-labeled A/B pairs where the label is the variant a marketer would
+actually send. The winning side alternates, so a positionally-biased scorer scores
+~50% instead of looking accidentally good. `make eval` reports pairwise ranking
+accuracy and CI fails below the threshold.
 
-It currently scores 100% on those 12 pairs. Worth being clear about what that
-does and doesn't mean: 12 pairs is enough to catch a regression, not enough to
-claim the scorer is objectively correct. It's a smoke test with teeth, not proof.
+**It scores 88.9% — 16 of 18.** The two it misses are in the set on purpose.
+
+Twelve of the pairs each isolate one lever the scorer measures, so it sweeps them;
+that's a regression test, not a benchmark. The other six are adversarial: the copy
+a marketer would pick *loses* on a measured dimension. Two of those break it:
+
+- It prefers copy that cites your exact browsing times over a clean alternative.
+  Maximum personalization score, maximum creepiness — the heuristic counts signals
+  and has no concept of *appropriate*.
+- It can't tell "You won't believe what happened" from "Your account has 3 new
+  features". Both are well-formed; only one says anything. The rubric measures the
+  shape of copy, not whether it has content.
+
+Both are pinned by a test, so if either starts passing I'll know the scorer
+actually improved instead of finding out by accident. Full write-up, including a
+pass that succeeds for the wrong reason, is in [docs/EVALUATION.md](docs/EVALUATION.md).
+
+Eighteen pairs labeled by one person isn't proof the scorer is right. It's enough
+to catch a regression and to know two specific things it gets wrong.
 
 ## Architecture
 
