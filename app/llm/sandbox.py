@@ -15,9 +15,11 @@ from __future__ import annotations
 
 import json
 import re
+import time
 
 from app.domain.enums import TONE_LEXICON, Tone
 from app.llm.base import LlmPort
+from app.metrics import LLM_CALLS, LLM_LATENCY
 
 _TASK_RE = re.compile(r"TASK:\s*(\w+)", re.IGNORECASE)
 
@@ -38,12 +40,17 @@ class SandboxLlm(LlmPort):
     async def complete(
         self, *, system: str, user: str, json_mode: bool = False, temperature: float = 0.7
     ) -> str:
-        task = self._task_of(system)
-        if task == "generate":
-            return json.dumps(self._generate(user))
-        if task == "judge":
-            return json.dumps(self._judge(user))
-        return "{}"
+        task = self._task_of(system) or "unknown"
+        started = time.perf_counter()
+        try:
+            if task == "generate":
+                return json.dumps(self._generate(user))
+            if task == "judge":
+                return json.dumps(self._judge(user))
+            return "{}"
+        finally:
+            LLM_CALLS.labels(task=task, status="ok").inc()
+            LLM_LATENCY.labels(task=task).observe(time.perf_counter() - started)
 
     @staticmethod
     def _task_of(text: str) -> str:

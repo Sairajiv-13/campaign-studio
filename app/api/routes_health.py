@@ -1,10 +1,14 @@
-"""Health endpoint (public)."""
+"""Health and metrics endpoints (public).
+
+``/metrics`` is left unauthenticated so a Prometheus scraper can reach it; in a
+real deployment it sits on an internal network or is gated at the ingress.
+"""
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 
-from app import __version__
+from app import __version__, metrics
 from app.deps import get_container
 
 router = APIRouter(tags=["health"])
@@ -19,3 +23,8 @@ async def health(request: Request) -> dict[str, object]:
         "model": container.model_label,
         "campaigns": container.store.count(),
     }
+
+
+@router.get("/metrics")
+async def prometheus_metrics() -> Response:
+    return Response(content=metrics.render(), media_type=metrics.CONTENT_TYPE)

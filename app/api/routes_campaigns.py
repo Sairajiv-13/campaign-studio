@@ -10,6 +10,7 @@ from app.api.schemas import CampaignAccepted, CreateCampaignRequest
 from app.deps import enforce_rate_limit, get_container
 from app.errors import NotFoundError, ValidationAppError
 from app.graph.state import CampaignState
+from app.metrics import CAMPAIGN_GENERATIONS
 from app.security.auth import (
     SCOPE_CAMPAIGNS_READ,
     SCOPE_CAMPAIGNS_WRITE,
@@ -40,6 +41,7 @@ async def create_campaign(
     state = CampaignState(request_id=request_id, brief=brief, model_label=container.model_label)
     plan = await container.pipeline.run(state)
     container.store.save(plan)
+    CAMPAIGN_GENERATIONS.inc()
     return CampaignAccepted(id=plan.id, plan=plan)
 
 
