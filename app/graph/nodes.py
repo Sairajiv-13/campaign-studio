@@ -26,6 +26,7 @@ from app.guardrails import check_variant
 from app.llm.base import LlmAdapterError
 from app.logging import get_logger
 from app.metrics import GENERATION_FALLBACKS, GUARDRAIL_FLAGS
+from app.prompting import prompt_field, prompt_list
 from app.scoring.scorer import score_variant
 
 logger = get_logger(__name__)
@@ -136,17 +137,19 @@ def _generate_prompt(brief: Brief, segment: Segment, channel: Channel) -> tuple[
         'action. Respond ONLY as JSON: {"variants": [{"angle": "...", "subject": "...", '
         '"preview_text": "...", "body": "..."}]}.'
     )
+    # Every user-supplied value is flattened so it cannot forge an extra
+    # `label: value` line (or inject instructions into a real model) — ADR-010.
     user = "\n".join(
         [
-            f"product: {brief.product_name}",
-            f"description: {brief.product_description}",
-            f"value_props: {'; '.join(brief.value_props)}",
+            f"product: {prompt_field(brief.product_name)}",
+            f"description: {prompt_field(brief.product_description)}",
+            f"value_props: {prompt_list(brief.value_props)}",
             f"tone: {brief.brand_voice.tone.value}",
             f"goal: {brief.goal.value}",
             f"channel: {channel.value}",
-            f"segment: {segment.name}",
-            f"traits: {', '.join(segment.traits)}",
-            f"incentive: {segment.incentive}",
+            f"segment: {prompt_field(segment.name)}",
+            f"traits: {prompt_list(segment.traits, separator=', ')}",
+            f"incentive: {prompt_field(segment.incentive)}",
             f"count: {brief.variants_per_segment}",
         ]
     )

@@ -179,7 +179,9 @@
       const dims = DIMS.map(d=>`<div class="dim"><span>${d.replace("_"," ")}</span>
         <div class="bar"><span style="width:${pct(sc[d])}%;background:${color(sc[d])}"></span></div>
         <span>${pct(sc[d])}%</span></div>`).join("");
-      const notes = (sc.notes||[]).length?`<div class="notes">⚠ ${sc.notes.join(" · ")}</div>`:"";
+      // Notes come from the model (and echo brief-supplied banned phrases), so they
+      // are untrusted output and must be escaped before hitting innerHTML — ADR-010.
+      const notes = (sc.notes||[]).length?`<div class="notes">⚠ ${(sc.notes||[]).map(escape).join(" · ")}</div>`:"";
       return `<div class="score"><span class="composite" style="color:${color(sc.composite)}">${pct(sc.composite)}</span>
         <span style="color:var(--muted);font-size:12px">composite score</span></div>
         <div class="dims">${dims}</div>${notes}`;
@@ -209,7 +211,9 @@
       });
     }
 
-    function escape(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
+    // Escapes quotes as well as angle brackets so the result is safe inside an
+    // HTML attribute, not just between tags (ADR-010).
+    function escape(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 
     $("login").onclick=login; $("run").onclick=run;
     renderSegments();

@@ -20,6 +20,7 @@ from app.domain.enums import Channel
 from app.domain.models import BrandVoice, ScoreBreakdown, Variant
 from app.llm.base import LlmAdapterError, LlmPort, TransientLlmError
 from app.logging import get_logger
+from app.prompting import prompt_field, prompt_list
 from app.scoring.heuristics import (
     cta_strength,
     deliverability,
@@ -92,12 +93,13 @@ async def _judge_brand_voice(
         "brand tone and honors the rules. Respond ONLY as JSON: "
         '{"brand_voice": 0.0, "notes": ["..."]}.'
     )
-    flat = " ".join(f"{variant.subject} {variant.body}".split())
+    # Flattened so neither the brief's own fields nor the generated copy can forge
+    # an extra `label: value` line or inject instructions into the judge (ADR-010).
     user = (
         f"tone: {brand_voice.tone.value}\n"
-        f"banned: {'; '.join(brand_voice.banned_phrases)}\n"
-        f"guidelines: {brand_voice.guidelines}\n"
-        f"text: {flat}"
+        f"banned: {prompt_list(brand_voice.banned_phrases)}\n"
+        f"guidelines: {prompt_field(brand_voice.guidelines)}\n"
+        f"text: {prompt_field(f'{variant.subject} {variant.body}')}"
     )
 
     for attempt in range(2):
