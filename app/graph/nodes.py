@@ -22,9 +22,10 @@ from app.domain.models import (
 )
 from app.graph.context import NodeContext
 from app.graph.state import CampaignState
+from app.guardrails import check_variant
 from app.llm.base import LlmAdapterError
 from app.logging import get_logger
-from app.metrics import GENERATION_FALLBACKS
+from app.metrics import GENERATION_FALLBACKS, GUARDRAIL_FLAGS
 from app.scoring.scorer import score_variant
 
 logger = get_logger(__name__)
@@ -63,12 +64,18 @@ async def generate_node(state: CampaignState, ctx: NodeContext) -> dict[str, Any
 
 async def score_node(state: CampaignState, ctx: NodeContext) -> dict[str, Any]:
     segments = {segment.id: segment for segment in state.brief.segments}
+    brand_voice = state.brief.brand_voice
     scored: list[ScoredVariant] = []
     for variant in state.variants:
         segment = segments.get(variant.segment_id)
         traits = segment.traits if segment else []
-        breakdown = await score_variant(ctx.llm, variant, state.brief.brand_voice, traits)
-        scored.append(ScoredVariant(variant=variant, score=breakdown))
+        breakdown = await score_variant(ctx.llm, variant, brand_voice, traits)
+        # Brand-safety gate (ADR-007): deterministic flags computed alongside the
+        # score so assemble can rank clean variants above flagged ones.
+        flags = check_variant(variant, brand_voice=brand_voice)
+        for flag in flags:
+            GUARDRAIL_FLAGS.labels(rule=flag.rule).inc()
+        scored.append(ScoredVariant(variant=variant, score=breakdown, flags=flags))
     return {"scored": scored}
 
 
@@ -79,9 +86,12 @@ async def assemble_node(state: CampaignState, ctx: NodeContext) -> dict[str, Any
 
     segment_plans: list[SegmentPlan] = []
     for segment in state.brief.segments:
+        # Rank clean variants above hard-flagged ones (ADR-007): a brand-safety
+        # violation shouldn't win a segment even with a strong score. Within each
+        # group, composite score decides. Tuple sorts False<True, so negate.
         ranked = sorted(
             by_segment.get(segment.id, []),
-            key=lambda sv: sv.score.composite,
+            key=lambda sv: (not sv.has_hard_flag, sv.score.composite),
             reverse=True,
         )
         if not ranked:

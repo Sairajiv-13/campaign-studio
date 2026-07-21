@@ -66,9 +66,24 @@ class ScoreBreakdown(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
 
+class GuardrailFlag(BaseModel):
+    """A brand-safety / compliance issue found in a generated variant (ADR-007)."""
+
+    rule: str
+    severity: str  # "hard" (blocks winning) or "soft" (advisory)
+    message: str
+
+
 class ScoredVariant(BaseModel):
     variant: Variant
     score: ScoreBreakdown
+    # Brand-safety flags from the deterministic guardrail (ADR-007). A variant with
+    # a "hard" flag is ranked below clean ones regardless of score.
+    flags: list[GuardrailFlag] = Field(default_factory=list)
+
+    @property
+    def has_hard_flag(self) -> bool:
+        return any(flag.severity == "hard" for flag in self.flags)
 
 
 class SegmentPlan(BaseModel):
