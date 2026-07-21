@@ -1,0 +1,12 @@
+# Load every dashboard JSON under ops/grafana/dashboards on startup.
+apiVersion: 1
+
+providers:
+  - name: campaign-studio
+    orgId: 1
+    folder: "Campaign Studio"
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/dashboards

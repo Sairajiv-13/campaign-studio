@@ -1,0 +1,167 @@
+{
+  "annotations": { "list": [] },
+  "description": "Operational + business metrics for Campaign Studio. Panels reference the exact Prometheus metrics the app emits (app/metrics.py); they are empty until Prometheus scrapes a running instance.",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "tags": ["campaign-studio"],
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "",
+  "title": "Campaign Studio — Overview",
+  "uid": "campaign-studio-overview",
+  "version": 1,
+  "panels": [
+    {
+      "type": "row",
+      "title": "Model calls",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
+    },
+    {
+      "type": "timeseries",
+      "title": "LLM call rate by task & status",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (task, status) (rate(llm_calls_total[5m]))",
+          "legendFormat": "{{task}} · {{status}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "LLM latency p95 by task (s)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le, task) (rate(llm_latency_seconds_bucket[5m])))",
+          "legendFormat": "{{task}}"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Cost (business KPIs)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 }
+    },
+    {
+      "type": "timeseries",
+      "title": "LLM spend rate by model (USD/hour)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (model) (rate(llm_cost_usd_total[1h])) * 3600",
+          "legendFormat": "{{model}}"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Cost per campaign p95 (USD)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 10 },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(campaign_cost_usd_bucket[1h])))"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Budget cap trips (24h)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 10 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "increase(budget_cap_tripped_total[24h])"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Cache hits (24h) — regens avoided",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 14 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "increase(campaign_cache_hits_total[24h])"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Campaigns generated (24h)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 14 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "increase(campaign_generations_total[24h])"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Quality & safety",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Guardrail flags by rule",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (rule) (increase(guardrail_flagged_variants_total[1h]))",
+          "legendFormat": "{{rule}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Generation fallbacks (degraded slots)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "increase(generation_fallbacks_total[1h])",
+          "legendFormat": "fallbacks/hour"
+        }
+      ]
+    }
+  ]
+}
