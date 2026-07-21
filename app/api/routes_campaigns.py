@@ -11,9 +11,11 @@ from app.cost import current_total_usd, open_ledger
 from app.deps import enforce_rate_limit, get_container
 from app.errors import NotFoundError, ValidationAppError
 from app.graph.state import CampaignState
+from app.idempotency import brief_fingerprint
 from app.logging import get_logger
 from app.metrics import (
     BUDGET_TRIPPED,
+    CAMPAIGN_CACHE_HITS,
     CAMPAIGN_COST,
     CAMPAIGN_GENERATIONS,
 )
@@ -33,6 +35,7 @@ router = APIRouter(prefix="/v1", tags=["campaigns"])
 async def create_campaign(
     payload: CreateCampaignRequest,
     request: Request,
+    force: bool = False,
     _principal: Principal = Depends(require_scope(SCOPE_CAMPAIGNS_WRITE)),
     __: None = Depends(enforce_rate_limit),
 ) -> CampaignAccepted:
@@ -44,6 +47,16 @@ async def create_campaign(
     if len(brief.segments) > settings.max_segments:
         raise ValidationAppError(f"at most {settings.max_segments} segments are allowed")
     brief.variants_per_segment = min(brief.variants_per_segment, settings.max_variants_per_segment)
+
+    # Idempotency (ADR-006): an unchanged brief returns the cached plan instead of
+    # paying to regenerate. `?force=true` overrides to get fresh variants.
+    fingerprint = brief_fingerprint(brief, model_label=container.model_label)
+    if not force:
+        cached = container.store.get_by_fingerprint(fingerprint)
+        if cached is not None:
+            CAMPAIGN_CACHE_HITS.inc()
+            logger.info("campaign_cache_hit", extra={"campaign_id": cached.id})
+            return CampaignAccepted(id=cached.id, plan=cached)
 
     request_id = uuid.uuid4().hex
 
@@ -67,7 +80,9 @@ async def create_campaign(
         plan.cost_usd = current_total_usd()
 
     container.budget.add(plan.cost_usd)
-    container.store.save(plan)
+    # Save under the fingerprint of the model that actually generated it (degraded
+    # runs are sandbox), so a later identical brief matches the right cached plan.
+    container.store.save(plan, fingerprint=brief_fingerprint(brief, model_label=model_label))
     CAMPAIGN_GENERATIONS.inc()
     CAMPAIGN_COST.observe(plan.cost_usd)
     return CampaignAccepted(id=plan.id, plan=plan)
