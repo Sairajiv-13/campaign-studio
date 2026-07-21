@@ -30,6 +30,30 @@ demo works offline. Point it at a real model with one env var when you want to.
 
 ---
 
+## What's real, what isn't
+
+Stated up front, because it's the thing most portfolio READMEs get wrong
+([ADR-009](docs/adr/009-honest-documentation.md)):
+
+- **Real and runnable here:** the pipeline, the scorer and its 18-pair validation,
+  cost accounting, the budget breaker, brief-fingerprint caching, the brand-safety
+  guardrail, the prompt-injection and XSS fixes, and the test suite (77 passing,
+  94% coverage). Every number in this README comes from running one of those.
+- **Built but unverified at scale:** this has **never been deployed or run at real
+  traffic.** The Grafana dashboard is a correct definition whose panels stay empty
+  until something scrapes a live instance.
+- **Costs are estimates at published per-token rates**, computed locally and reset on
+  restart — a guardrail signal, not a reconciled bill. `/v1/usage` says so in its own
+  response.
+- **Real-model validation was attempted and blocked by hardware.** The attempt and
+  repro steps are in [docs/EVALUATION.md](docs/EVALUATION.md) rather than quietly
+  replaced with sandbox numbers dressed up as model quality.
+
+No invented metrics, incidents, or screenshots. If a number isn't reproducible from
+this repo, it says so.
+
+---
+
 ## What makes it more than "call an LLM"
 
 Generation is the boring half. The real question is which variant ships, and
@@ -79,6 +103,39 @@ pass that succeeds for the wrong reason, is in [docs/EVALUATION.md](docs/EVALUAT
 
 Eighteen pairs labeled by one person isn't proof the scorer is right. It's enough
 to catch a regression and to know two specific things it gets wrong.
+
+## The parts that aren't the demo
+
+Generating copy is one API call. These are the things that make it a system you
+could actually put in front of a marketing team — each one a real mechanism with a
+test and an ADR:
+
+- **It tells you what the campaign cost.** Every LLM call is priced into a
+  per-request ledger, so a plan reports its own generation cost. A daily budget
+  breaker degrades to the sandbox model before a runaway bill happens, and
+  `GET /v1/usage` shows spend against the cap.
+  [ADR-004](docs/adr/004-cost-tracking.md)
+- **One bad completion doesn't sink the campaign.** A malformed response degrades
+  that one segment × channel slot to a template; the plan reports `degraded` and a
+  `fallback_count` rather than silently shipping worse copy.
+  [ADR-005](docs/adr/005-generation-resilience.md)
+- **It won't pay twice for the same brief.** Briefs are fingerprinted — including
+  the model label, so sandbox output never gets served as if a real model produced
+  it — and an identical brief returns the cached plan.
+  [ADR-006](docs/adr/006-brief-idempotency.md)
+- **Brand-safety is deterministic, and it outranks the score.** SMS length, unknown
+  merge tags, and banned phrases are *hard* flags: a variant carrying one can't win
+  its segment no matter how well it scores. Spam triggers and shouting are advisory.
+  [ADR-007](docs/adr/007-brand-safety-guardrails.md)
+- **A hostile brief can't rewrite the prompt or run script in the UI.** Both were
+  real bugs, found and fixed: user values are flattened so they can't forge a
+  `label: value` line, and model-produced notes are escaped before rendering.
+  [ADR-010](docs/adr/010-prompt-injection-and-output-escaping.md) ·
+  [SECURITY.md](docs/SECURITY.md)
+
+Operating it: [OPERATIONS.md](docs/OPERATIONS.md) ·
+[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) ·
+[OBSERVABILITY.md](docs/OBSERVABILITY.md).
 
 ## Architecture
 
@@ -161,10 +218,11 @@ curl -s -X POST localhost:8000/v1/campaigns -H "Authorization: Bearer $TOKEN" \
 |---------------|------|---------|
 | `GET /` | public | Demo UI |
 | `GET /health` | public | Liveness + model + campaign count |
-| `GET /metrics` | public | Prometheus metrics (LLM calls, latency, generations) |
+| `GET /metrics` | public | Prometheus metrics (LLM calls/latency, cost by model, cost per campaign, budget trips, cache hits, fallbacks, guardrail flags by rule) |
 | `POST /v1/auth/token` | service creds | Exchange credentials for a JWT |
 | `POST /v1/campaigns` | `campaigns:write` | Generate + score a campaign |
 | `GET /v1/campaigns/{id}` | `campaigns:read` | Fetch a stored plan |
+| `GET /v1/usage` | `campaigns:read` | Today's estimated spend, the budget cap, and whether generation is degraded |
 
 ## Using a real model
 
@@ -206,8 +264,13 @@ app/
   security/   JWT, scopes, in-process rate limiting
   api/        FastAPI routes + schemas
   web/        self-contained demo UI
+  cost.py     per-request LLM cost ledger + budget tracker
+  guardrails.py  deterministic brand-safety / compliance rules
+  idempotency.py brief fingerprinting (don't pay twice)
+  prompting.py   safe `label: value` prompt assembly
 evals/        labeled A/B dataset + ranking-accuracy harness (CI gate)
-docs/         ADRs, deployment guide, screenshots
+ops/          Prometheus config + Grafana dashboard/provisioning
+docs/         ADRs (001-010) · OPERATIONS · TROUBLESHOOTING · SECURITY · OBSERVABILITY · EVALUATION · DEPLOYMENT
 tests/        unit + integration (hermetic)
 ```
 
@@ -226,9 +289,12 @@ Roughly in the order I'd actually pick them up:
 3. **Multivariate testing** — real experiment tracking so the A/B winner is
    validated against actual results instead of just the scorer's opinion.
 4. **Persistence and history** — swap the in-memory store for Postgres behind the
-   existing interface, plus per-brand voice profiles.
-5. **Guardrails** — claims and compliance checks for regulated copy (health,
-   finance), beyond the banned-phrase list.
+   existing interface, plus per-brand voice profiles. This is also what unblocks a
+   durable spend counter and an audit trail; today both reset with the process.
+5. **Claims and regulated-copy checks** — the guardrail covers mechanical and
+   brand rules (length, merge tags, banned phrases, spam signals). It does *not*
+   check whether a claim is substantiated, which is what health and finance copy
+   actually needs.
 6. **Streaming generation** — mostly a UX win; the wait is noticeable with a real
    model.
 
