@@ -86,3 +86,6 @@ class CampaignPlan(BaseModel):
     product_name: str
     segment_plans: list[SegmentPlan]
     model: str  # "sandbox" or the real model id, for provenance
+    # Estimated generation cost at published provider rates (ADR-004). 0.0 in
+    # sandbox mode. An estimate, not a billed amount.
+    cost_usd: float = 0.0

@@ -19,6 +19,23 @@ CAMPAIGN_GENERATIONS = Counter(
     "campaign_generations_total", "Campaigns generated and scored end to end"
 )
 
+# Cost accounting (ADR-004).
+LLM_COST = Counter("llm_cost_usd_total", "LLM spend in USD by model", ["model"])
+BUDGET_TRIPPED = Counter(
+    "budget_cap_tripped_total", "Real-model generations forced to sandbox by the budget cap"
+)
+CAMPAIGN_COST = Histogram("campaign_cost_usd", "Estimated cost per generated campaign (USD)")
+
+# Idempotency (ADR-006): briefs served from cache instead of regenerated.
+CAMPAIGN_CACHE_HITS = Counter(
+    "campaign_cache_hits_total", "Repeat briefs served from cache without regenerating"
+)
+
+# Brand-safety guardrail (ADR-007): variants flagged by the output gate.
+GUARDRAIL_FLAGS = Counter(
+    "guardrail_flagged_variants_total", "Generated variants flagged by a guardrail rule", ["rule"]
+)
+
 # Re-exported so callers don't import prometheus_client directly.
 CONTENT_TYPE = CONTENT_TYPE_LATEST
 

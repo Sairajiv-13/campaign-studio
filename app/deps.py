@@ -14,6 +14,7 @@ from typing import Protocol
 from fastapi import Request
 
 from app.config import LlmMode, Settings
+from app.cost import BudgetTracker
 from app.graph.build import Pipeline
 from app.graph.context import NodeContext
 from app.llm.base import LlmPort
@@ -36,6 +37,9 @@ class Container:
     settings: Settings
     llm: LlmPort
     pipeline: Pipeline
+    # Sandbox-only pipeline used when the daily budget cap trips (ADR-004).
+    degraded_pipeline: Pipeline
+    budget: BudgetTracker
     store: CampaignStore
     rate_limiter: RateLimiter
     model_label: str
@@ -68,10 +72,17 @@ def build_container(settings: Settings) -> Container:
     closables: list[_Closable] = []
     llm, model_label = build_llm(settings, closables)
     pipeline = Pipeline(NodeContext(llm=llm, model_label=model_label))
+    # Always-free fallback pipeline for when the budget cap trips. Built once.
+    degraded_pipeline = Pipeline(NodeContext(llm=SandboxLlm(), model_label="sandbox"))
     return Container(
         settings=settings,
         llm=llm,
         pipeline=pipeline,
+        degraded_pipeline=degraded_pipeline,
+        budget=BudgetTracker(
+            warn_usd=settings.daily_budget_warn_usd,
+            cap_usd=settings.daily_budget_cap_usd,
+        ),
         store=CampaignStore(),
         rate_limiter=RateLimiter(
             limit=settings.rate_limit_requests,

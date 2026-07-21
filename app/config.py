@@ -55,6 +55,11 @@ class Settings(BaseSettings):
     max_variants_per_segment: int = 5
     max_request_bytes: int = 262_144
 
+    # Cost guardrails (ADR-004). Process-local daily spend thresholds in USD; at the
+    # cap, real-model generation degrades to the free sandbox model.
+    daily_budget_warn_usd: float = 15.0
+    daily_budget_cap_usd: float = 25.0
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_origins(cls, value: object) -> object:

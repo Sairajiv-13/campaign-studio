@@ -16,9 +16,10 @@ import time
 
 import httpx
 
+from app.cost import LlmUsage, estimate_cost, record
 from app.llm.base import LlmPort, PermanentLlmError, TransientLlmError
 from app.logging import get_logger
-from app.metrics import LLM_CALLS, LLM_LATENCY, task_label
+from app.metrics import LLM_CALLS, LLM_COST, LLM_LATENCY, task_label
 
 logger = get_logger(__name__)
 
@@ -103,9 +104,22 @@ class OpenAICompatibleLlm(LlmPort):
             )
 
         try:
-            return str(response.json()["choices"][0]["message"]["content"]).strip()
+            data = response.json()
+            content = str(data["choices"][0]["message"]["content"]).strip()
         except (KeyError, IndexError, TypeError) as exc:
             raise PermanentLlmError("Malformed LLM response") from exc
+
+        # Record cost from the provider's usage block (ADR-004). Absent (some
+        # OpenAI-compatible servers omit it) -> record zero tokens rather than guess.
+        usage = data.get("usage") or {}
+        tokens_in = int(usage.get("prompt_tokens", 0))
+        tokens_out = int(usage.get("completion_tokens", 0))
+        cost = estimate_cost(self._model, tokens_in, tokens_out)
+        record(
+            LlmUsage(model=self._model, tokens_in=tokens_in, tokens_out=tokens_out, cost_usd=cost)
+        )
+        LLM_COST.labels(model=self._model).inc(cost)
+        return content
 
     async def aclose(self) -> None:
         await self._client.aclose()

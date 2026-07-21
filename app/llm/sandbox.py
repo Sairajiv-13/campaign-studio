@@ -17,6 +17,7 @@ import json
 import re
 import time
 
+from app.cost import LlmUsage, record
 from app.domain.enums import TONE_LEXICON, Tone
 from app.llm.base import LlmPort
 from app.metrics import LLM_CALLS, LLM_LATENCY
@@ -44,10 +45,22 @@ class SandboxLlm(LlmPort):
         started = time.perf_counter()
         try:
             if task == "generate":
-                return json.dumps(self._generate(user))
-            if task == "judge":
-                return json.dumps(self._judge(user))
-            return "{}"
+                result = json.dumps(self._generate(user))
+            elif task == "judge":
+                result = json.dumps(self._judge(user))
+            else:
+                result = "{}"
+            # Record a $0 usage row with a rough token estimate (~4 chars/token) so
+            # the cost ledger and metrics still reflect call volume in sandbox mode.
+            record(
+                LlmUsage(
+                    model="sandbox",
+                    tokens_in=(len(system) + len(user)) // 4,
+                    tokens_out=len(result) // 4,
+                    cost_usd=0.0,
+                )
+            )
+            return result
         finally:
             LLM_CALLS.labels(task=task, status="ok").inc()
             LLM_LATENCY.labels(task=task).observe(time.perf_counter() - started)
