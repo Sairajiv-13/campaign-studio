@@ -20,3 +20,5 @@ class CampaignState(BaseModel):
     variants: list[Variant] = Field(default_factory=list)
     scored: list[ScoredVariant] = Field(default_factory=list)
     plan: CampaignPlan | None = None
+    # Count of generation slots that fell back to a template (ADR-005).
+    fallback_count: int = 0

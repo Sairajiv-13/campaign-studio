@@ -31,6 +31,11 @@ CAMPAIGN_CACHE_HITS = Counter(
     "campaign_cache_hits_total", "Repeat briefs served from cache without regenerating"
 )
 
+# Generation resilience (ADR-005): slots that fell back to a template.
+GENERATION_FALLBACKS = Counter(
+    "generation_fallbacks_total", "Generation slots that degraded to a templated variant"
+)
+
 # Brand-safety guardrail (ADR-007): variants flagged by the output gate.
 GUARDRAIL_FLAGS = Counter(
     "guardrail_flagged_variants_total", "Generated variants flagged by a guardrail rule", ["rule"]

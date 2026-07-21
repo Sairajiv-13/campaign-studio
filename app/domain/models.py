@@ -89,3 +89,8 @@ class CampaignPlan(BaseModel):
     # Estimated generation cost at published provider rates (ADR-004). 0.0 in
     # sandbox mode. An estimate, not a billed amount.
     cost_usd: float = 0.0
+    # Generation health (ADR-005): how many (segment × channel) slots fell back to
+    # a templated variant because the model output was missing/unparseable.
+    # `degraded` is a convenience flag for the UI to warn on.
+    fallback_count: int = 0
+    degraded: bool = False

@@ -24,6 +24,7 @@ from app.graph.context import NodeContext
 from app.graph.state import CampaignState
 from app.llm.base import LlmAdapterError
 from app.logging import get_logger
+from app.metrics import GENERATION_FALLBACKS
 from app.scoring.scorer import score_variant
 
 logger = get_logger(__name__)
@@ -32,6 +33,7 @@ logger = get_logger(__name__)
 async def generate_node(state: CampaignState, ctx: NodeContext) -> dict[str, Any]:
     brief = state.brief
     variants: list[Variant] = []
+    fallback_count = 0
     for segment in brief.segments:
         for channel in brief.channels:
             system, user = _generate_prompt(brief, segment, channel)
@@ -47,11 +49,16 @@ async def generate_node(state: CampaignState, ctx: NodeContext) -> dict[str, Any
                 items = []
 
             if not items:
+                # A single bad completion degrades this one slot to a template
+                # rather than sinking the whole campaign (ADR-005). We count it so
+                # the plan can honestly report reduced quality.
                 items = [_fallback_variant(brief, segment, channel)]
+                fallback_count += 1
+                GENERATION_FALLBACKS.inc()
 
             for index, item in enumerate(items[: brief.variants_per_segment]):
                 variants.append(_to_variant(segment, channel, index, item))
-    return {"variants": variants}
+    return {"variants": variants, "fallback_count": fallback_count}
 
 
 async def score_node(state: CampaignState, ctx: NodeContext) -> dict[str, Any]:
@@ -96,6 +103,8 @@ async def assemble_node(state: CampaignState, ctx: NodeContext) -> dict[str, Any
         product_name=state.brief.product_name,
         segment_plans=segment_plans,
         model=state.model_label,
+        fallback_count=state.fallback_count,
+        degraded=state.fallback_count > 0,
     )
     return {"plan": plan}
 
