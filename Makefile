@@ -24,6 +24,15 @@ cov: ## Run tests with the >80% coverage gate
 eval: ## Validate the copy scorer against human A/B preferences
 	python -m evals --min-accuracy 0.8
 
+# Requires OPENAI_API_KEY in the environment. Costs real money (~$0.02 with
+# gpt-4o-mini); the run prints what it actually spent. See docs/EVALUATION.md.
+eval-real: ## Score the LLM judge against a real model and write real-model-report.json
+	LLM_MODE=real \
+	LLM_BASE_URL=https://api.openai.com/v1 \
+	LLM_API_KEY=$$OPENAI_API_KEY \
+	LLM_MODEL=gpt-4o-mini \
+	python -m evals --json real-model-report.json
+
 run: ## Run the API + demo UI locally
 	uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 

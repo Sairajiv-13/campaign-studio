@@ -133,6 +133,44 @@ The five heuristic dimensions should be **identical** to the sandbox run — the
 never call a model — so any movement in the table isolates exactly what the LLM
 judge contributes to `brand_voice`. That diff is the experiment worth running.
 
+### The hosted version: two cents, twenty minutes
+
+Local inference is blocked on this hardware, but a hosted endpoint sidesteps it
+entirely and costs about the price of nothing:
+
+```bash
+export OPENAI_API_KEY=sk-...        # your key; never commit it
+make eval-real
+```
+
+That scores the 18 labeled pairs with `gpt-4o-mini` as the brand-voice judge and
+writes `real-model-report.json`. The run **prints what it actually spent**, metered
+from the response `usage` block rather than estimated (ADR-004). At published rates
+(`app/cost.py`) it's on the order of two cents.
+
+> **Status: not yet run.** The table below is a template. Until it's filled in, the
+> README's "real-model validation is hardware-blocked" claim stands as written —
+> that's deliberate (ADR-009), not an omission.
+
+| Metric | Sandbox judge | gpt-4o-mini | Notes |
+|---|---|---|---|
+| ranking accuracy | 88.9% (16/18) | _TBD_ | |
+| single-lever pairs | 12/12 | _TBD_ | should stay 12/12 — heuristics don't call a model |
+| adversarial pairs | 4/6 | _TBD_ | **the interesting number** |
+| `a03` (specificity) | fail | _TBD_ | does a real judge tell "you won't believe" from real content? |
+| creepy-personalization pair | fail | _TBD_ | does a real judge penalize the over-personalized variant? |
+| run cost | $0.0000 | _TBD_ | |
+
+**The two documented failures are the experiment.** Both are judgment calls a
+rubric can't make — whether copy actually says anything, and whether personalization
+has crossed into creepy. If a real judge flips either, that's a concrete finding:
+*the LLM contributes judgment the heuristics can't encode*. If it flips neither,
+that's equally publishable — the failure is in the rubric's design, not the judge.
+
+Either result is a better sentence than "unverified". Record it here even if it's
+unflattering; a documented failure mode reads as engineering judgment, a clean
+number invites a question you can't answer.
+
 ## What I'd measure next
 
 1. Re-run the whole set against a real model and diff the per-lever table — the
