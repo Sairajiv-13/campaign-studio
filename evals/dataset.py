@@ -7,7 +7,7 @@ only ~50%.
 
 The set has two halves that measure different things:
 
-* ``PAIRS`` (p01-p12) isolate one lever each — CTA, personalization,
+* ``PAIRS`` (p01-p12) isolate one lever each. CTA, personalization,
   deliverability, brand voice, subject, clarity. The preferred variant is stronger
   on that lever and the other is weaker on exactly it. A working scorer sweeps
   these, which makes them a **regression test**.
@@ -222,7 +222,7 @@ PAIRS: list[EvalPair] = [
 # Adversarial pairs
 # --------------------------------------------------------------------------- #
 # The pairs above each isolate one lever the scorer explicitly measures, so a
-# working scorer should sweep them — which makes them a regression test, not a
+# working scorer should sweep them, which makes them a regression test, not a
 # hard benchmark. These are the opposite: cases where the copy a marketer would
 # actually pick *loses* on at least one measured dimension. They are expected to
 # expose real failure modes, and they do (see docs/EVALUATION.md). Keeping known

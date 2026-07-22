@@ -11,7 +11,7 @@ highest-risk output in the system: an SMS over the carrier limit gets split or
 truncated, a broken `{merge_tag}` ships an unrendered literal to someone's inbox, a
 banned/off-brand phrase is a compliance incident, and spam-trigger language quietly
 destroys deliverability. The scorer already judges *quality* (tone, clarity, CTA).
-It does not gate *safety* — "this is good copy" and "this is safe to send" are
+It does not gate *safety*. "this is good copy" and "this is safe to send" are
 different questions.
 
 ## Decision
@@ -28,7 +28,7 @@ variant during scoring and attaches structured `GuardrailFlag`s:
 | `spam_trigger` | soft | classic phrases that hurt deliverability |
 | `all_caps` | soft | shouting reads as spam |
 
-**A hard flag drops a variant below clean ones in ranking** — assemble sorts on
+**A hard flag drops a variant below clean ones in ranking**. Assemble sorts on
 `(no hard flag, composite)`, so a brand-safety violation can't win a segment even
 with a great score. Soft flags are advisory. Flags surface on each `ScoredVariant`,
 increment `guardrail_flagged_variants_total{rule}`, and are gated in CI by a
@@ -36,7 +36,7 @@ poisoned-copy catch-rate (`evals/guardrails.py`, `--min-guardrail`, default 1.0)
 
 ## Why rules, not an LLM judge
 
-For the failures that actually cause harm here — length, tags, banned phrases —
+For the failures that actually cause harm here. Length, tags, banned phrases —
 a regex is stricter, deterministic, free, and auditable, and (unlike a second
 model) can't itself be prompt-injected by the copy it's checking. We deliberately
 **don't** judge tone or truthfulness with a rule; the brand-voice *score* covers
@@ -45,11 +45,11 @@ tone, and "is this claim true" is out of scope for a linter.
 ## Honest limitations
 
 - **It's a denylist, not a safety proof.** Fluent, plausible, non-triggering but
-  factually wrong copy passes — no rule catches that, and we don't pretend it does.
+  factually wrong copy passes, no rule catches that, and we don't pretend it does.
 - **The merge-tag allowlist and spam lexicon are illustrative**, not a real ESP's.
   A production deployment would source them from the send platform; the mechanism is
   the point.
-- **Hard-flagged variants are ranked down, not deleted** — they still appear in the
+- **Hard-flagged variants are ranked down, not deleted**. They still appear in the
   segment's list (transparency), just never as the winner.
 
 ## Consequences

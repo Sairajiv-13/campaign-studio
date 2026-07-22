@@ -4,7 +4,7 @@ What someone running this service needs: how to see its state, and the handful o
 interventions it actually supports. Every `/v1` endpoint needs a bearer token
 (`POST /v1/auth/token`).
 
-> These are the procedures the code supports today — not an aspirational runbook.
+> These are the procedures the code supports today, not an aspirational runbook.
 > Where a capability is missing, it says so.
 
 ## State at a glance
@@ -37,7 +37,7 @@ climbs, and real-model generations are being served by the sandbox instead.
 
 1. Look at `GET /v1/usage` for today's estimated spend against `warn`/`cap`.
 2. If spend is legitimate and the cap is too low, raise `DAILY_BUDGET_CAP_USD` and
-   restart. If it isn't, find the source before lifting the cap — check
+   restart. If it isn't, find the source before lifting the cap. Check
    `campaign_cost_usd` for outlier campaigns and `llm_calls_total` for a retry storm.
 3. Remember the counter is **process-local and resets on restart** (ADR-004), so a
    restart clears the degraded state whether or not you fixed the cause.
@@ -57,11 +57,11 @@ their severities live in `app/guardrails.py`:
 
 Banned phrases are **per-brief** (`brand_voice.banned_phrases`), so tightening brand
 rules is a request-body change, not a deploy. Changing a *rule* (or its severity) is
-a code change with a test — deliberately, so brand-safety can't drift silently.
+a code change with a test. Deliberately, so brand-safety can't drift silently.
 
 ### Forcing a regeneration
 Identical briefs return the cached plan (ADR-006). To regenerate, change any field
-in the brief — or restart the process, which clears the in-memory cache. There is
+in the brief, or restart the process, which clears the in-memory cache. There is
 **no cache-invalidation endpoint**; with an in-memory store it would be a restart
 with extra steps.
 
@@ -82,13 +82,13 @@ judge call per variant. The caps that bound it:
 
 Single image, one process (`uvicorn app.main:app`); see
 [DEPLOYMENT.md](DEPLOYMENT.md). Because state is in-memory (ADR-002), **a deploy
-drops all campaigns, the brief cache, and the daily spend counter** — acceptable for
+drops all campaigns, the brief cache, and the daily spend counter**. Acceptable for
 this project's scope, and the first thing to change if it ever needed to be durable.
 There is no blue/green or canary automation; a deploy is an image swap.
 
 ## What this runbook deliberately doesn't have
 
-No queue draining, no dead-letter replay, no worker scaling — the pipeline is
+No queue draining, no dead-letter replay, no worker scaling. The pipeline is
 synchronous and in-process (ADR-003/005). Adding that machinery would be complexity
 this system hasn't earned. If generation volume ever justified it, the honest first
 step is a real store (ADR-002), then a queue — in that order.

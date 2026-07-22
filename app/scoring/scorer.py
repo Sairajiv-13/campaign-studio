@@ -5,7 +5,7 @@ score into a single weighted composite per variant. The judge call degrades
 gracefully: on any LLM failure or malformed output we fall back to a deterministic
 banned-phrase check rather than failing the whole campaign.
 
-Weights reflect what actually drives lifecycle performance — brand consistency and
+Weights reflect what actually drives lifecycle performance. Brand consistency and
 a strong, personalized call to action matter most; deliverability is a floor you
 must not sink through.
 """

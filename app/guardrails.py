@@ -2,8 +2,8 @@
 
 Generated copy goes in front of real customers and through real email/SMS
 infrastructure, so before a variant can *win* its segment it passes a deterministic
-gate (ADR-007). These are rule-based checks — regex and length, no model judging a
-model — because the failure modes that actually hurt are mechanical and objective:
+gate (ADR-007). These are rule-based checks. Regex and length, no model judging a
+model, because the failure modes that actually hurt are mechanical and objective:
 
 - an SMS over the segment limit gets split (extra cost) or truncated by the carrier;
 - a broken ``{merge_tag}`` renders literally in the customer's inbox;
@@ -11,7 +11,7 @@ model — because the failure modes that actually hurt are mechanical and object
 - spam-trigger words and SHOUTING tank deliverability.
 
 A "hard" flag drops a variant below clean ones in ranking; "soft" flags are
-advisory. We deliberately don't try to judge tone or truthfulness here — a rule
+advisory. We deliberately don't try to judge tone or truthfulness here. A rule
 can't, and the brand-voice *score* already covers tone.
 """
 

@@ -7,11 +7,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > Generates email/SMS campaign variants per audience segment, scores each one, and
-> tells you which to send — with the scoring measured against human judgment, not
+> tells you which to send. The scoring is measured against human judgment, not
 > assumed.
 
 I wanted to see how far you can get grading marketing copy automatically. Writing
-the copy is the easy half — any model will hand you five subject lines. Picking
+the copy is the easy half. Any model will hand you five subject lines. Picking
 which one actually goes out is the part most "AI marketing" demos skip, usually by
 asking the model to grade its own homework.
 
@@ -21,7 +21,7 @@ Give it a product brief and some segments, and it writes variants for each segme
 scores every one on brand voice, clarity, CTA strength, personalization, and
 deliverability, then ranks them and hands back a winner plus a runner-up for A/B.
 
-It runs with no API key and no model download — the generator and the brand-voice
+It runs with no API key and no model download. The generator and the brand-voice
 judge both have deterministic sandbox implementations, so CI is hermetic and the
 demo works offline. Point it at a real model with one env var when you want to.
 
@@ -43,7 +43,7 @@ Stated up front, because it's the thing most portfolio READMEs get wrong
   traffic.** The Grafana dashboard is a correct definition whose panels stay empty
   until something scrapes a live instance.
 - **Costs are estimates at published per-token rates**, computed locally and reset on
-  restart — a guardrail signal, not a reconciled bill. `/v1/usage` says so in its own
+  restart. A guardrail signal, not a reconciled bill. `/v1/usage` says so in its own
   response.
 - **Real-model validation was attempted and blocked by hardware.** The attempt and
   repro steps are in [docs/EVALUATION.md](docs/EVALUATION.md) rather than quietly
@@ -57,7 +57,7 @@ this repo, it says so.
 ## What makes it more than "call an LLM"
 
 Generation is the boring half. The real question is which variant ships, and
-"ask the model which one it likes" is circular — same student grading the exam.
+"ask the model which one it likes" is circular. Same student grading the exam.
 
 So most of the scorer is plain Python:
 
@@ -70,7 +70,7 @@ So most of the scorer is plain Python:
 | **deliverability** | spam triggers, shouting caps, exclamation abuse |
 
 Those roll into a weighted composite. Brand voice and CTA carry the most weight;
-deliverability is a floor you shouldn't sink through — great copy in the spam
+deliverability is a floor you shouldn't sink through. Great copy in the spam
 folder is worth nothing.
 
 I do use an LLM as the judge for brand voice, because tone is genuinely hard to
@@ -91,7 +91,7 @@ that's a regression test, not a benchmark. The other six are adversarial: the co
 a marketer would pick *loses* on a measured dimension. Two of those break it:
 
 - It prefers copy that cites your exact browsing times over a clean alternative.
-  Maximum personalization score, maximum creepiness — the heuristic counts signals
+  Maximum personalization score, maximum creepiness. The heuristic counts signals
   and has no concept of *appropriate*.
 - It can't tell "You won't believe what happened" from "Your account has 3 new
   features". Both are well-formed; only one says anything. The rubric measures the
@@ -107,7 +107,7 @@ to catch a regression and to know two specific things it gets wrong.
 ## The parts that aren't the demo
 
 Generating copy is one API call. These are the things that make it a system you
-could actually put in front of a marketing team — each one a real mechanism with a
+could actually put in front of a marketing team. Each one a real mechanism with a
 test and an ADR:
 
 - **It tells you what the campaign cost.** Every LLM call is priced into a
@@ -119,9 +119,9 @@ test and an ADR:
   that one segment × channel slot to a template; the plan reports `degraded` and a
   `fallback_count` rather than silently shipping worse copy.
   [ADR-005](docs/adr/005-generation-resilience.md)
-- **It won't pay twice for the same brief.** Briefs are fingerprinted — including
-  the model label, so sandbox output never gets served as if a real model produced
-  it — and an identical brief returns the cached plan.
+- **It won't pay twice for the same brief.** Briefs are fingerprinted, and the
+  fingerprint includes the model label, so sandbox output never gets served as if a
+  real model produced it. An identical brief returns the cached plan.
   [ADR-006](docs/adr/006-brief-idempotency.md)
 - **Brand-safety is deterministic, and it outranks the score.** SMS length, unknown
   merge tags, and banned phrases are *hard* flags: a variant carrying one can't win
@@ -164,10 +164,10 @@ stateDiagram-v2
     assemble --> [*]
 ```
 
-- **generate** — for each segment × channel, ask the model for N on-brand variants
+- **generate**. For each segment × channel, ask the model for N on-brand variants
   as JSON. A malformed completion falls back to a templated variant, so one bad
   response doesn't sink the whole campaign.
-- **score** — grade every variant with the heuristics plus the brand-voice judge
+- **score**. Grade every variant with the heuristics plus the brand-voice judge
   into a `ScoreBreakdown`.
 - **assemble** — rank per segment, pick the winner and runner-up, roll up into a
   `CampaignPlan`.
@@ -227,7 +227,7 @@ curl -s -X POST localhost:8000/v1/campaigns -H "Authorization: Bearer $TOKEN" \
 ## Using a real model
 
 Set `LLM_MODE=real` and point `LLM_BASE_URL` at any OpenAI-compatible endpoint
-(local Ollama by default — `ollama pull llama3.1`). Same code path: the prompts
+(local Ollama by default. `ollama pull llama3.1`). Same code path: the prompts
 already ask for JSON via `response_format`. Transient failures (timeouts, 5xx,
 429) retry three times with 1s/2s backoff; 4xx and malformed responses fail fast,
 since retrying those just burns quota.
@@ -246,7 +246,7 @@ and exits non-zero below the threshold so CI catches a scoring regression.
 
 ## Testing
 
-Hermetic — sandbox model, in-memory store, no services, no secrets.
+Hermetic. Sandbox model, in-memory store, no services, no secrets.
 
 ```bash
 make test        # or: make cov  (>80% gate)
@@ -281,21 +281,21 @@ Deployment notes and the full env var table are in
 
 Roughly in the order I'd actually pick them up:
 
-1. **Predicted engagement model** — the biggest gap. Right now engagement is a
+1. **Predicted engagement model**. The biggest gap. Right now engagement is a
    heuristic proxy; a small model trained on historical open/click data per segment
    would replace guesswork with evidence.
-2. **Send-time optimization** — picking when to send, and which channel, per
+2. **Send-time optimization**. Picking when to send, and which channel, per
    segment. Cheap to add, measurable lift.
-3. **Multivariate testing** — real experiment tracking so the A/B winner is
+3. **Multivariate testing**. Real experiment tracking so the A/B winner is
    validated against actual results instead of just the scorer's opinion.
-4. **Persistence and history** — swap the in-memory store for Postgres behind the
+4. **Persistence and history**. Swap the in-memory store for Postgres behind the
    existing interface, plus per-brand voice profiles. This is also what unblocks a
    durable spend counter and an audit trail; today both reset with the process.
 5. **Claims and regulated-copy checks** — the guardrail covers mechanical and
    brand rules (length, merge tags, banned phrases, spam signals). It does *not*
    check whether a claim is substantiated, which is what health and finance copy
    actually needs.
-6. **Streaming generation** — mostly a UX win; the wait is noticeable with a real
+6. **Streaming generation**. Mostly a UX win; the wait is noticeable with a real
    model.
 
 ---

@@ -1,7 +1,7 @@
 """Brief fingerprinting for idempotent generation.
 
 Generating a campaign costs real model calls (ADR-004). Submitting the *same brief*
-twice — a double-click, a retry, a marketer re-running an unchanged brief — should
+twice. A double-click, a retry, a marketer re-running an unchanged brief. Should
 not pay to regenerate it. So each brief gets a deterministic fingerprint; if a plan
 for that fingerprint already exists, we return it instead of regenerating
 (ADR-006). `force=true` opts out when the marketer wants fresh variants.

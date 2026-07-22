@@ -5,7 +5,7 @@ Owns one pooled ``httpx.AsyncClient`` and maps transport/HTTP failures onto the
 port's exception contract.
 
 Transient failures (timeouts, 5xx, 429) are retried with exponential backoff;
-permanent failures (4xx, malformed response) fail fast — retrying them only burns
+permanent failures (4xx, malformed response) fail fast. Retrying them only burns
 latency and quota.
 """
 

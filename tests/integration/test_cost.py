@@ -28,7 +28,7 @@ async def test_plan_carries_cost_and_usage_endpoint_reports(
     resp = await client.post("/v1/campaigns", json=_BRIEF, headers=auth_headers)
     assert resp.status_code == 201
     plan = resp.json()["plan"]
-    # Sandbox is free, so the estimate is exactly 0.0 — but the field is present
+    # Sandbox is free, so the estimate is exactly 0.0, but the field is present
     # and wired, which is what proves the accounting path runs.
     assert plan["cost_usd"] == 0.0
 

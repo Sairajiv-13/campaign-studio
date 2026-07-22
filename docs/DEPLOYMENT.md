@@ -7,7 +7,7 @@ worker to run (see [ADR-002](adr/002-in-memory-store.md)), so deployment is just
 ## Local / Docker Compose
 
 The repo's [`docker-compose.yml`](../docker-compose.yml) brings the studio up in
-sandbox mode — no API keys, no model download:
+sandbox mode, no API keys, no model download:
 
 ```bash
 cp .env.example .env
@@ -25,7 +25,7 @@ docker compose exec ollama ollama pull llama3.1
 LLM_MODE=real docker compose up --build
 ```
 
-Any OpenAI-compatible endpoint works — point `LLM_BASE_URL` at OpenAI, vLLM, or a
+Any OpenAI-compatible endpoint works. Point `LLM_BASE_URL` at OpenAI, vLLM, or a
 gateway and set `LLM_API_KEY`.
 
 ## Environment variables
@@ -57,22 +57,22 @@ gateway and set `LLM_API_KEY`.
   values; the app refuses to boot in `APP_ENV=production` with the default secret.
 - **Terminate TLS at the load balancer** and lock `CORS_ORIGINS` to your frontend.
 - **Scale horizontally.** Generation is stateless and CPU/LLM-bound, so add
-  replicas. Note that campaign *retrieval by id* is instance-local (ADR-002) — put
+  replicas. Note that campaign *retrieval by id* is instance-local (ADR-002). Put
   a shared store behind `CampaignStore` if you need cross-replica reads.
 - **Rate limiting is per-process.** With N replicas the effective limit is N× the
   configured value; move it to a shared store if you need a global budget.
 - **Scrape `/metrics`.** It exposes `llm_calls_total`, `llm_latency_seconds`, and
-  `campaign_generations_total`. Alert on LLM error rate and p99 latency — with a
+  `campaign_generations_total`. Alert on LLM error rate and p99 latency. With a
   real model, latency is dominated by the model call.
 - **Watch LLM cost and rate limits.** Each campaign issues one generate call per
   segment×channel plus one judge call per variant; budget accordingly.
-- **Keep `/metrics` internal** — it is unauthenticated for scrapers; gate it at the
+- **Keep `/metrics` internal**. It is unauthenticated for scrapers; gate it at the
   ingress or bind it to a private network.
 - **Health checks:** point the load balancer at `GET /health`.
 
 ## Terraform sketch (ECS Fargate + RDS)
 
-Illustrative only — the studio needs no database today; RDS is shown for the case
+Illustrative only. The studio needs no database today; RDS is shown for the case
 where you swap `CampaignStore` for Postgres.
 
 ```hcl

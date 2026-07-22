@@ -1,8 +1,8 @@
 """Prometheus metrics.
 
 Metric objects are process-global singletons (the Prometheus client model). Labels
-are deliberately low-cardinality — the ``task`` label is the pipeline step
-(``generate`` / ``judge``), never free text — so the series count stays bounded.
+are deliberately low-cardinality. The ``task`` label is the pipeline step
+(``generate`` / ``judge``), never free text, so the series count stays bounded.
 """
 
 from __future__ import annotations

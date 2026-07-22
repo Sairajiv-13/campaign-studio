@@ -138,7 +138,7 @@ def _generate_prompt(brief: Brief, segment: Segment, channel: Channel) -> tuple[
         '"preview_text": "...", "body": "..."}]}.'
     )
     # Every user-supplied value is flattened so it cannot forge an extra
-    # `label: value` line (or inject instructions into a real model) — ADR-010.
+    # `label: value` line (or inject instructions into a real model). ADR-010.
     user = "\n".join(
         [
             f"product: {prompt_field(brief.product_name)}",

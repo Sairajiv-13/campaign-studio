@@ -1,6 +1,6 @@
 """In-memory campaign store.
 
-Persistence is not this project's story — generation and scoring are — so campaigns
+Persistence is not this project's story. Generation and scoring are, so campaigns
 live in process memory behind a small interface. The interface is the seam: swap in
 Postgres/Redis without touching the API or pipeline.
 """

@@ -1,7 +1,7 @@
 # Security
 
 The threat model this studio is built against, the controls in place, and what it
-does *not* defend against. The gaps are listed on purpose (ADR-009) — a security doc
+does *not* defend against. The gaps are listed on purpose (ADR-009). A security doc
 that only lists strengths is marketing.
 
 ## What we're protecting
@@ -9,7 +9,7 @@ that only lists strengths is marketing.
 A service that takes an untrusted **brief**, feeds it to an LLM, and returns
 generated marketing copy that a human will review and eventually send to real
 customers. Money is attached (LLM spend). The system takes **no external actions** —
-it opens no tickets, sends no mail, calls no tools — which deliberately keeps the
+it opens no tickets, sends no mail, calls no tools, which deliberately keeps the
 blast radius of a bad generation at "bad copy", not "bad copy that got sent".
 
 ## Controls in place
@@ -37,7 +37,7 @@ blast radius of a bad generation at "bad copy", not "bad copy that got sent".
 - **Rate limiting is per-process.** Behind more than one instance the limit is
   per-instance, not global.
 - **State is in-memory** (ADR-002). There's no data at rest to protect, but equally
-  no audit trail — campaigns, cache, and the spend counter vanish on restart.
+  no audit trail. Campaigns, cache, and the spend counter vanish on restart.
 - **Spend is a local estimate**, not a reconciled bill; it's a guardrail signal, and
   it resets on restart, so it can't be relied on as a hard spend ceiling across
   restarts.
@@ -45,10 +45,10 @@ blast radius of a bad generation at "bad copy", not "bad copy that got sent".
   environment; deps are pinned. Adding `pip-audit`/Dependabot to CI is a clear next
   step.
 - **The demo UI is a demo.** It's a single unbuilt HTML file for exercising the API,
-  not a hardened front end — no CSP, no framework escaping guarantees beyond the
+  not a hardened front end, no CSP, no framework escaping guarantees beyond the
   explicit `escape()` calls.
 
 ## Reporting
 
 This is a portfolio project, not a hosted service. If you're reviewing it and find
-something — especially a gap not listed above — please open an issue.
+something. Especially a gap not listed above. Please open an issue.

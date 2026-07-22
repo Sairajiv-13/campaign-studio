@@ -16,7 +16,7 @@ The pipeline is an explicit `StateGraph` over a single typed `CampaignState`
 returns only the fields it changed; LangGraph merges the delta.
 
 Compilation is not free, so `Pipeline` compiles the graph **once** in its
-constructor and is built a single time per process in the composition root — not
+constructor and is built a single time per process in the composition root, not
 per request.
 
 The reasons this beats three inline `await`s:

@@ -7,11 +7,11 @@ sign in with `marketer` / `local-dev-password`):
 
 | Filename | What to capture |
 |----------|-----------------|
-| `01-brief.png` | The brief form on the left — product, tone, goal, banned phrases, and the selected segments. |
+| `01-brief.png` | The brief form on the left. Product, tone, goal, banned phrases, and the selected segments. |
 | `02-campaign-plan.png` | A generated plan: the winning variant per segment with the composite score and the five dimension bars. |
 | `03-score-breakdown.png` | A close-up of one winner's score breakdown, including the warning notes (weak CTA / low personalization / deliverability risk). |
 | `04-variants.png` | The expanded "Other variants" list showing the ranking that produced the winner. |
-| `05-eval-report.png` | Terminal output of `make eval` — pairwise ranking accuracy and the per-lever breakdown. |
+| `05-eval-report.png` | Terminal output of `make eval`. Pairwise ranking accuracy and the per-lever breakdown. |
 
 Guidelines:
 

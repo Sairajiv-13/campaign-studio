@@ -1,7 +1,7 @@
 """Structured JSON logging with a per-request correlation id.
 
 One JSON object per line, machine-parseable by any aggregator with no shipping
-agent. Dependency-free on purpose — stdlib logging is enough.
+agent. Dependency-free on purpose. Stdlib logging is enough.
 """
 
 from __future__ import annotations

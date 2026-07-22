@@ -1,7 +1,7 @@
 """LLM cost accounting.
 
 A campaign fans out into (segments x channels x variants) generations plus a
-brand-voice judge call per variant — dozens of model calls for one brief. For a
+brand-voice judge call per variant. Dozens of model calls for one brief. For a
 marketing tool that's the whole cost story, and "what did this campaign cost to
 generate?" is a question a marketer actually asks. So every LLM call is priced into
 a request-scoped ledger and the total is surfaced on the CampaignPlan.
@@ -78,11 +78,11 @@ def current_total_usd() -> float:
 
 
 class BudgetTracker:
-    """Process-local daily spend cap — the last line of defense against a runaway
+    """Process-local daily spend cap. The last line of defense against a runaway
     bill (ADR-004).
 
     Honest limitation: this is **in-memory**. Spend resets when the process
-    restarts, and across multiple instances each has its own counter — there is no
+    restarts, and across multiple instances each has its own counter. There is no
     shared store here (consistent with the in-memory CampaignStore, ADR-002). It
     stops a runaway loop within one running process; a multi-instance deployment
     would move this to a shared counter. Documented, not hidden.

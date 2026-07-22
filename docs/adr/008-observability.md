@@ -28,18 +28,18 @@ system doesn't need.
 ## Why no distributed tracing here
 
 The ops-agent sibling project wires OpenTelemetry because it spans two processes
-(an API and a separate worker) — "where is it slow across the boundary" is a real
+(an API and a separate worker), "where is it slow across the boundary" is a real
 question there. This studio is **one process** running a short, synchronous
 three-node pipeline; the per-task latency histogram already answers "generate vs
 judge, how long." Adding a tracing SDK and a collector would be complexity the
 architecture doesn't earn. If the pipeline ever became distributed, tracing goes in
-then — behind the same kind of opt-in seam.
+then. Behind the same kind of opt-in seam.
 
 ## Honest limitations
 
 - **The dashboard is a definition, not a screenshot.** Its panels are empty until
   Prometheus scrapes a running instance under some traffic. This repo has never run
-  at load — the value is a correct dashboard wired to the real metric names, not an
+  at load. The value is a correct dashboard wired to the real metric names, not an
   image of invented data (cf. ADR-009 on honest documentation).
 - **Metrics are per-process.** Consistent with the in-memory store and budget
   (ADR-002/004): across replicas each has its own counters until scraped and summed

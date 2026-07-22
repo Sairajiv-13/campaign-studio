@@ -1,6 +1,6 @@
 """Generation resilience: a failing model degrades, it doesn't crash (ADR-005).
 
-There's no queue or worker here — generation is synchronous and bounded — so
+There's no queue or worker here. Generation is synchronous and bounded, so
 "reliability" means one bad completion never sinks the whole campaign, and the plan
 reports honestly when it fell back.
 """
@@ -57,7 +57,7 @@ async def test_generation_failure_falls_back_and_reports_degraded() -> None:
     # 2 segments × 2 channels = 4 slots, all fell back.
     assert plan.fallback_count == 4
     assert plan.degraded is True
-    # Crucially, a usable plan still came out — every segment has a winner.
+    # Crucially, a usable plan still came out. Every segment has a winner.
     assert len(plan.segment_plans) == 2
     for sp in plan.segment_plans:
         assert sp.winner.variant.body

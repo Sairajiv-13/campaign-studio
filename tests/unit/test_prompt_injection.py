@@ -1,7 +1,7 @@
 """End-to-end proof that a hostile brief can't forge prompt fields (ADR-010).
 
 test_prompting.py covers the helper in isolation; this drives the *real* prompt
-builder with a malicious brief and asserts the injection is inert — the regression
+builder with a malicious brief and asserts the injection is inert. The regression
 that would matter is someone interpolating a raw field back into the prompt.
 """
 

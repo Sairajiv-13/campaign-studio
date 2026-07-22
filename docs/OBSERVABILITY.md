@@ -29,21 +29,21 @@ docker compose --profile observability up
 - Prometheus: <http://localhost:9090>
 
 > **Honest note:** the dashboard panels are empty until Prometheus has scraped a
-> running instance under traffic. This repo has never run at load — the value here
+> running instance under traffic. This repo has never run at load. The value here
 > is a correct dashboard *definition* wired to the real metric names, not a
 > screenshot of invented data.
 
 ## What to watch
 
-- **Cost per campaign** and **spend by model** — the headline for a generation tool.
-- **Budget cap trips** — if this is climbing, real generation is silently degrading
+- **Cost per campaign** and **spend by model**. The headline for a generation tool.
+- **Budget cap trips**. If this is climbing, real generation is silently degrading
   to sandbox; raise the cap or investigate the load ([OPERATIONS.md](OPERATIONS.md)).
-- **Guardrail flags by rule** — a spike in `banned_phrase` or `merge_tag` means the
+- **Guardrail flags by rule**. A spike in `banned_phrase` or `merge_tag` means the
   model is producing unsafe copy; the guardrail is catching it, but it's a signal.
-- **Generation fallbacks** — the model is erroring or returning junk on some slots.
+- **Generation fallbacks**. The model is erroring or returning junk on some slots.
 
 ## No tracing (on purpose)
 
 This is a single-process app with a short synchronous pipeline; the per-task latency
 histogram already localizes slowness. Distributed tracing would be unearned
-complexity here — see [ADR-008](adr/008-observability.md).
+complexity here; see [ADR-008](adr/008-observability.md).

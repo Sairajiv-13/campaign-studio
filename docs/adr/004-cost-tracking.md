@@ -6,7 +6,7 @@
 ## Context
 
 One brief fans out into (segments × channels × variants) generation calls plus a
-brand-voice judge call per variant — easily 20–40 model calls for a single
+brand-voice judge call per variant. Easily 20–40 model calls for a single
 campaign. On a paid model that is real money per click of "Generate," and a
 marketer's first question is "what did this cost?" A generation tool that can't
 answer that, or that has no ceiling on a runaway loop, isn't production-credible.
@@ -34,7 +34,7 @@ everywhere they surface.
   real spend to report; the numbers come from list prices, not an invoice. Said
   plainly in the API response (`"estimate at published rates"`) and the README.
 - **The budget is in-memory and process-local.** It resets on restart and each
-  replica counts separately — consistent with the in-memory store (ADR-002). It
+  replica counts separately. Consistent with the in-memory store (ADR-002). It
   stops a runaway loop inside one process; a multi-instance deploy would move the
   counter to a shared store. Documented, not hidden.
 - **Token estimates for servers that omit `usage`.** Some OpenAI-compatible servers

@@ -9,11 +9,11 @@ Generating a campaign costs real model calls (ADR-004). The same brief gets
 submitted more than once in normal use: a double-clicked button, a client retry
 after a timeout, or a marketer re-running an unchanged brief to "get the results
 again." Regenerating from scratch each time bills for output the marketer already
-has — and, because generation is non-deterministic on a real model, hands back
+has, and, because generation is non-deterministic on a real model, hands back
 *different* copy, which is confusing when they expected the same campaign.
 
 This system has no external side effects (it doesn't send anything), so idempotency
-here isn't about avoiding duplicate deliveries — it's about **not paying twice**.
+here isn't about avoiding duplicate deliveries. It's about **not paying twice**.
 
 ## Decision
 
@@ -30,12 +30,12 @@ fingerprint for the same reason.
 ## Honest limitations
 
 - **The cache lives in the in-memory store (ADR-002).** It resets on restart and is
-  per-replica — the same brief can regenerate after a deploy or on a different
+  per-replica. The same brief can regenerate after a deploy or on a different
   instance. Acceptable here (the cost of an occasional regen is small, and there's
   no correctness risk); a shared cache would be the move if this served real
   traffic across replicas.
 - **Fingerprint equality is exact.** A trivially reworded brief is a different
-  brief and regenerates — by design; "similar" briefs legitimately want fresh copy.
+  brief and regenerates. By design; "similar" briefs legitimately want fresh copy.
 
 ## Consequences
 

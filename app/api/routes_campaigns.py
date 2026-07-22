@@ -96,7 +96,7 @@ async def get_usage(
     """Today's estimated LLM spend and the budget cap state (ADR-004).
 
     Spend is an estimate at published rates and is process-local (resets on
-    restart) — see the ADR for why that's an accepted limitation here.
+    restart); see the ADR for why that's an accepted limitation here.
     """
 
     container = get_container(request)

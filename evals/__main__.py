@@ -1,4 +1,4 @@
-"""CLI: ``python -m evals`` — validate the scorer against human A/B preferences."""
+"""CLI: ``python -m evals``. Validate the scorer against human A/B preferences."""
 
 from __future__ import annotations
 

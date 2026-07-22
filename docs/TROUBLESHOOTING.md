@@ -1,7 +1,7 @@
 # Troubleshooting
 
 Real problems you can hit running this repo, and the fix. If something here is
-wrong, it's a bug in the docs — fix it.
+wrong, it's a bug in the docs. Fix it.
 
 ## Setup
 
@@ -16,7 +16,7 @@ uv pip install -e ".[dev]"
 
 ### The studio starts but generation is slow / hangs on a real model
 `LLM_MODE=real` points at an OpenAI-compatible endpoint (Ollama by default). Local
-inference needs real RAM — on a small machine a 3B model swaps to disk and takes
+inference needs real RAM. On a small machine a 3B model swaps to disk and takes
 minutes per call, and this pipeline makes **one call per segment × channel** plus a
 judge call per variant, so a 3-segment brief is a dozen-plus calls. This is a
 hardware limit, not a bug. The default `LLM_MODE=sandbox` runs the whole studio
@@ -26,7 +26,7 @@ validation attempt and why it was blocked here.
 ## Auth
 
 ### `401 unauthorized`
-Get a token first — the demo service account is in `.env.example`:
+Get a token first. The demo service account is in `.env.example`:
 
 ```bash
 curl -s -X POST localhost:8000/v1/auth/token \
@@ -49,7 +49,7 @@ That's the **fallback path** working. If the model returns malformed JSON or err
 for a segment/channel slot, that slot degrades to a templated variant instead of
 sinking the whole campaign (ADR-005). Check `generation_fallbacks_total` in
 `/metrics` and look for `generation_failed` in the logs. In sandbox mode you should
-see zero fallbacks — a nonzero count there means a real bug.
+see zero fallbacks. A nonzero count there means a real bug.
 
 ### I resubmitted the same brief and got the identical plan instantly
 Working as intended (ADR-006). Briefs are fingerprinted; an identical brief returns
@@ -77,14 +77,14 @@ too low, or look at what's burning spend first.
 ## State
 
 ### My campaigns disappeared after a restart
-Expected. The store is **in-memory** (ADR-002) — campaigns, the brief cache, and the
+Expected. The store is **in-memory** (ADR-002). Campaigns, the brief cache, and the
 daily spend counter all reset when the process restarts. That's a deliberate scope
 choice for this project, not an oversight; the ADR explains the trade and what
 swapping in a real store would take.
 
 ### Spend in `/v1/usage` looks lower than my provider bill
 It's an **estimate at published per-token rates**, computed locally and reset on
-restart — not a reconciled bill. Treat it as a guardrail signal, not accounting.
+restart, not a reconciled bill. Treat it as a guardrail signal, not accounting.
 
 ## Observability
 

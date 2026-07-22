@@ -1,7 +1,7 @@
 """In-process fixed-window rate limiter.
 
 This service is a single stateless process (generation is CPU/LLM-bound, not
-horizontally sharded state), so an in-memory limiter is the right weight — no
+horizontally sharded state), so an in-memory limiter is the right weight, no
 Redis dependency. Behind multiple replicas each instance limits independently;
 that is documented, and swapping in a shared store is a small change if needed.
 """

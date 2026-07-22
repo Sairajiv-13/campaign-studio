@@ -11,7 +11,7 @@ does the scorer give the preferred variant the higher composite?
 
 The winning side alternates between A and B, so a scorer with positional bias
 scores ~50% rather than accidentally looking good. `mean margin` is the average
-absolute gap between the two composites — it catches the case where the scorer
+absolute gap between the two composites. It catches the case where the scorer
 "wins" by a rounding error.
 
 ```bash
@@ -42,20 +42,20 @@ accuracy by lever:
 
 ## Why it isn't 100%, and why that's the point
 
-The first 12 pairs each isolate one lever the scorer explicitly measures — strong
+The first 12 pairs each isolate one lever the scorer explicitly measures. Strong
 CTA vs weak, personalized vs generic, clean vs spammy. A working scorer sweeps
 them. That makes them a **regression test**, not a benchmark. An eval you always
 pass tells you nothing about quality; it only tells you nothing broke.
 
 So there are 6 adversarial pairs where the copy a marketer would pick *loses* on a
 measured dimension. Two of them the scorer gets wrong. Those stay in the set, and
-there's a test (`test_known_failure_modes_are_still_failing`) pinning them — if
+there's a test (`test_known_failure_modes_are_still_failing`) pinning them. If
 one starts passing, that's a real improvement worth noticing rather than a silent
 change.
 
 ## Known failure modes
 
-### 1. `a01` — personalization has no notion of appropriateness
+### 1. `a01`: personalization has no notion of appropriateness
 
 Variant A cites the exact times someone browsed ("at 11pm last night, and again
 this morning from your phone"). It scores maximum personalization: merge tag,
@@ -63,11 +63,11 @@ segment trait, second person. It is also the kind of email that makes people
 unsubscribe.
 
 The heuristic counts personalization signals. It cannot distinguish *relevant*
-from *surveillant*, because that distinction isn't in the text — it's in social
+from *surveillant*, because that distinction isn't in the text. It's in social
 norms. Fixing it properly means either a judge prompt that grades creepiness, or
 a rule capping how specific a behavioral reference may be.
 
-### 2. `a03` — nothing penalizes a vague hook
+### 2. `a03`: nothing penalizes a vague hook
 
 "You won't believe what happened" is well-formed: good subject length, no spam
 words, readable, has a CTA. It's also content-free clickbait, and it loses to
@@ -80,7 +80,7 @@ contain a concrete claim" isn't a regex.
 ## A caveat on the passes
 
 `a04` (near-miss banned phrase) passes, but not for the right reason. The banned
-list contains "miracle cure" and the copy says "miracle formula" — the substring
+list contains "miracle cure" and the copy says "miracle formula". The substring
 check does **not** catch that. The pair resolves correctly on other dimensions.
 Treat that lever as unverified: paraphrased policy violations will get through,
 which is the sort of thing that matters if this ever touched regulated copy.
@@ -103,7 +103,7 @@ gap by running the same eval with `LLM_MODE=real` against local Ollama.
 
 It didn't run on my hardware. The dev machine has 6 GB of RAM; `llama3.2:3b` needs
 ~2.9 GB and `llama3.2:1b` ~1.4 GB, and with a browser open there was under 1 GB
-free. Both models loaded but then swapped to disk on every token — a single "say
+free. Both models loaded but then swapped to disk on every token. A single "say
 OK" call took over four minutes and usually timed out. My own retry logic caught
 it correctly (three transient retries, then a clean `TransientLlmError`), which at
 least confirms that path works, but there were no useful judgments to score.
@@ -129,8 +129,8 @@ LLM_MODE=real LLM_MODEL=llama3.1 LLM_BASE_URL=http://localhost:11434/v1 \
 LLM_MODE=real LLM_BASE_URL=... LLM_API_KEY=... LLM_MODEL=... python -m evals
 ```
 
-The five heuristic dimensions should be **identical** to the sandbox run — they
-never call a model — so any movement in the table isolates exactly what the LLM
+The five heuristic dimensions should be **identical** to the sandbox run. They
+never call a model, so any movement in the table isolates exactly what the LLM
 judge contributes to `brand_voice`. That diff is the experiment worth running.
 
 ### The hosted version: two cents, twenty minutes
@@ -155,14 +155,14 @@ from the response `usage` block rather than estimated (ADR-004). At published ra
 | Metric | Sandbox judge | gpt-4o-mini | Notes |
 |---|---|---|---|
 | ranking accuracy | 88.9% (16/18) | _TBD_ | |
-| single-lever pairs | 12/12 | _TBD_ | should stay 12/12 — heuristics don't call a model |
+| single-lever pairs | 12/12 | _TBD_ | should stay 12/12. Heuristics don't call a model |
 | adversarial pairs | 4/6 | _TBD_ | **the interesting number** |
 | `a03` (specificity) | fail | _TBD_ | does a real judge tell "you won't believe" from real content? |
 | creepy-personalization pair | fail | _TBD_ | does a real judge penalize the over-personalized variant? |
 | run cost | $0.0000 | _TBD_ | |
 
 **The two documented failures are the experiment.** Both are judgment calls a
-rubric can't make — whether copy actually says anything, and whether personalization
+rubric can't make: whether copy actually says anything, and whether personalization
 has crossed into creepy. If a real judge flips either, that's a concrete finding:
 *the LLM contributes judgment the heuristics can't encode*. If it flips neither,
 that's equally publishable — the failure is in the rubric's design, not the judge.
@@ -173,7 +173,7 @@ number invites a question you can't answer.
 
 ## What I'd measure next
 
-1. Re-run the whole set against a real model and diff the per-lever table — the
+1. Re-run the whole set against a real model and diff the per-lever table. The
    heuristic dimensions should be unchanged, so any movement isolates the judge.
 2. Add a specificity dimension and see whether `a03` flips without regressing the
    single-lever pairs.

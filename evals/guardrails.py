@@ -1,12 +1,12 @@
 """Adversarial corpus for the brand-safety guardrail (ADR-007).
 
 The scorer eval measures ranking judgment; this measures whether the guardrail
-catches *known-bad copy* — the outputs a real model produces on a bad day. Each
+catches *known-bad copy*. The outputs a real model produces on a bad day. Each
 case is a variant the guardrail must hard-flag; the runner reports a catch rate and
 CI gates on it. A regression that weakens a rule shows up as a dropped catch.
 
 Only failure modes a rule can defend deterministically live here (length, merge
-tags, banned phrases) — not "is the tone right", which we don't pretend to judge.
+tags, banned phrases), not "is the tone right", which we don't pretend to judge.
 """
 
 from __future__ import annotations
@@ -85,7 +85,7 @@ CLEAN = GuardrailCase(
 
 def guardrail_catch_rate() -> tuple[float, int]:
     """Fraction of poisoned cases the guardrail hard-flags (and the clean control
-    must pass). Deterministic — no model — so it's cheap and gates every run."""
+    must pass). Deterministic, no model, so it's cheap and gates every run."""
 
     from app.guardrails import check_variant
 
