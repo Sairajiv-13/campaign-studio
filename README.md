@@ -84,7 +84,7 @@ actually send. The winning side alternates, so a positionally-biased scorer scor
 ~50% instead of looking accidentally good. `make eval` reports pairwise ranking
 accuracy and CI fails below the threshold.
 
-**It scores 88.9% — 16 of 18.** The two it misses are in the set on purpose.
+**It scores 88.9%: 16 of 18.** The two it misses are in the set on purpose.
 
 Twelve of the pairs each isolate one lever the scorer measures, so it sweeps them;
 that's a regression test, not a benchmark. The other six are adversarial: the copy
@@ -169,7 +169,7 @@ stateDiagram-v2
   response doesn't sink the whole campaign.
 - **score**. Grade every variant with the heuristics plus the brand-voice judge
   into a `ScoreBreakdown`.
-- **assemble** — rank per segment, pick the winner and runner-up, roll up into a
+- **assemble**. Rank per segment, pick the winner and runner-up, roll up into a
   `CampaignPlan`.
 
 Each node is a pure `async (state, ctx) -> dict` that returns only what it changed,
@@ -291,7 +291,7 @@ Roughly in the order I'd actually pick them up:
 4. **Persistence and history**. Swap the in-memory store for Postgres behind the
    existing interface, plus per-brand voice profiles. This is also what unblocks a
    durable spend counter and an audit trail; today both reset with the process.
-5. **Claims and regulated-copy checks** — the guardrail covers mechanical and
+5. **Claims and regulated-copy checks**. The guardrail covers mechanical and
    brand rules (length, merge tags, banned phrases, spam signals). It does *not*
    check whether a claim is substantiated, which is what health and finance copy
    actually needs.
