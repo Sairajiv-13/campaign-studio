@@ -2,7 +2,7 @@
 
 # Lifecycle Campaign Studio
 
-[![CI](https://github.com/sairajeev-collab/campaign-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/sairajeev-collab/campaign-studio/actions/workflows/ci.yml)
+[![CI](https://github.com/Sairajiv-13/campaign-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/Sairajiv-13/campaign-studio/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -300,4 +300,4 @@ Roughly in the order I'd actually pick them up:
 
 ---
 
-Built by [Sairajeev](https://github.com/sairajeev-collab). MIT licensed.
+Built by [Sai Rajiv Nagula](https://github.com/Sairajiv-13). MIT licensed.
