@@ -30,6 +30,25 @@ demo works offline. Point it at a real model with one env var when you want to.
 
 ---
 
+## Problem
+
+Generating marketing copy is easy. Deciding which variant deserves to be sent is the part teams guess at, and letting the same model grade its own output is not measurement.
+
+## Approach
+
+A LangGraph pipeline writes email and SMS variants per audience segment, then scores each one on brand voice, clarity, CTA strength, personalization, and deliverability with a separate judge. Costs are accounted per run with a budget breaker. A brand safety guardrail and the prompt injection and XSS defenses are pinned by tests. Sandbox implementations keep CI hermetic and the demo runnable with no API key.
+
+## Results
+
+- The scorer is validated against 18 human labeled pairs, and pairwise ranking accuracy is a CI gate: the build fails below 0.8
+- 77 tests, 94 percent coverage, ruff and mypy strict, green CI
+- Container image: https://github.com/users/Sairajiv-13/packages/container/package/campaign-studio
+- Stated plainly: this has never run at real traffic, and real model validation was attempted and blocked by hardware, with the attempt documented rather than replaced by dressed up numbers
+
+## Tech stack
+
+Python 3.12, FastAPI, LangGraph, Prometheus metrics, JWT auth, Docker, GitHub Actions
+
 ## What's real, what isn't
 
 Stated up front, because it's the thing most portfolio READMEs get wrong
